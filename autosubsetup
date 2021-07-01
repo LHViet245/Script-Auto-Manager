@@ -43,6 +43,11 @@ fi
 
 apt-get -qq update
 
+if [ $(dpkg-query -W -f='${Status}' unzip 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+	echo "Installing apt-utils"
+	apt-get -yqq install unzip 2>&1 >> /dev/null
+fi
+
 if [ $(dpkg-query -W -f='${Status}' apt-utils 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
 	echo "Installing apt-utils"
 	apt-get -yqq install apt-utils 2>&1 >> /dev/null
@@ -98,14 +103,29 @@ if ! python3.9 -m pip --version 2>/dev/null;then
 	rm get-pip.py
 fi
 
-if [ $(apt-cache show ffmpeg | grep -c "Version: 7:4.*") -eq 0 ] ;then
-	echo "Installing ffmpeg Version 4.x"
-	add-apt-repository ppa:jonathonf/ffmpeg-4
-	apt-get -qq update
-	apt-get -yqq install ffmpeg
+if [ $(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+	if [ $(apt-cache show ffmpeg | grep -c "Version: 7:4.*") -eq 0 ] ;then
+		echo "Installing ffmpeg Version 4.x"
+		add-apt-repository ppa:jonathonf/ffmpeg-4
+		apt-get -qq update
+		apt-get -yqq install ffmpeg
+	else
+		echo "Installing ffmpeg Version 4.x"
+		apt-get -yqq install ffmpeg
+	fi
 else
-	echo "Installing ffmpeg Version 4.x"
-	apt-get -yqq install ffmpeg
+	if [ $(ffmpeg -version | grep "ffmpeg version 4.*") -eq 0 ]; then
+		apt-get -yqq uninstall ffmpeg
+		if [ $(apt-cache show ffmpeg | grep -c "Version: 7:4.*") -eq 0 ] ;then
+			echo "Installing ffmpeg Version 4.x"
+			add-apt-repository ppa:jonathonf/ffmpeg-4
+			apt-get -qq update
+			apt-get -yqq install ffmpeg
+		else
+			echo "Installing ffmpeg Version 4.x"
+			apt-get -yqq install ffmpeg
+		fi
+	fi
 fi
 
 # Install langcode .Source: "https://github.com/rspeer/langcodes"
@@ -181,6 +201,6 @@ echo "Installation complete"
 echo
 echo "You can now run .autosub and .cptodrive"
 
-if [ "$rundir" != "/etc/atsinstall ]; then
+if [ "$rundir" != "/etc/atsinstall" ]; then
     rm -f $rundir/autosubsetup
 fi
