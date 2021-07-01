@@ -114,7 +114,7 @@ if [ $(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed")
 		apt-get -yqq install ffmpeg
 	fi
 else
-	if [ $(ffmpeg -version | grep "ffmpeg version 4.*") -eq 0 ]; then
+	if [ $(ffmpeg -version | grep -c "ffmpeg version 4.*") -eq 0 ]; then
 		apt-get -yqq uninstall ffmpeg
 		if [ $(apt-cache show ffmpeg | grep -c "Version: 7:4.*") -eq 0 ] ;then
 			echo "Installing ffmpeg Version 4.x"
