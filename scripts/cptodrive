@@ -1,0 +1,238 @@
+#! /usr/bin/env bash
+# Variable
+cptodriveCOMP="$HOME/check/cptodriveCOMP.txt"
+cptodriveFAIL="$HOME/check/cptodriveFAIL.txt"
+cptodriveDONE="$HOME/check/cptodriveDONE.txt"
+
+[ ! -d "$HOME/check" ] && mkdir $HOME/check
+[ ! -f "$HOME/check/cptodriveCOMP.txt" ] && touch $HOME/check/cptodriveCOMP.txt
+[ ! -f "$HOME/check/cptodriveFAIL.txt" ] && touch $HOME/check/cptodriveFAIL.txt
+[ ! -f "$HOME/check/cptodriveDONE.txt" ] && touch $HOME/check/cptodriveDONE.txt
+
+#dcz="256M"
+#tf="16"
+#ck="32"
+#ex=
+folder=
+rfd="syncc"
+tailnum=$(($# + 6))
+
+# Variable Color for text
+LIGHTCYAN=$'\e[1;37m'
+ORANGE=$'\e[0;33m'
+GREEN=$'\e[0;32m'
+RED=$'\e[0;31m'F
+YELLOW=$'\e[1;33m'
+LIGHTBLUE=$'\e[1;34m'
+NC=$'\e[0m' ## No Color
+
+checkfile() {
+	## List File Completed
+if [ -f "$cptodriveCOMP" ] 2>/dev/null ;then
+	echo -e "${GREEN}[COMPLETED]${NC}"
+	tail -n $tailnum "$cptodriveCOMP" 2>/dev/null
+fi
+	## List File Fail
+if [ -f "$cptodriveFAIL" ] 2>/dev/null ;then
+	echo -e "${RED}[FAIL]${NC}"
+	cat "$cptodriveFAIL" 2>/dev/null
+	rm "$cptodriveFAIL" 2>/dev/null
+fi
+	## List File Done
+if [ -f "$cptodriveDONE" ] 2>/dev/null ;then
+	echo -e "${YELLOW}[Done]${NC}"
+	if [ $# -gt 20 ] 2>/dev/null ;then
+		tail -n 10 "$cptodriveDONE" 2>/dev/null
+	else
+		cat "$cptodriveDONE" 2>/dev/null
+	fi
+	rm "$cptodriveDONE" 2>/dev/null
+fi
+return
+}
+ 
+#Function Filename
+filename() {
+	filename=$(basename "$file")
+    #extension=${filename##*.}
+    name=${filename%.*}
+return
+}
+
+#Function Rclone
+copytodrive() {
+echo -e "${LIGHTBLUE}Stating Copy File${NC} ${YELLOW}[$filename]${NC} to ggdrive ${YELLOW}[vietle]${NC}\n"
+# Check file is Dicrectory or file
+if [ -d "$file" ] 2>/dev/null ;then
+	echo -e "${LIGHTBLUE}[$filename]${NC} ${LIGHTBLUE}la mot Folder${NC}"
+	name="$filename"
+else
+	name=
+fi
+# Run Rclone
+rclone copy -P -v "$file" "vietle:/$rfd/$folder$direx$name" --fast-list --create-empty-src-dirs --ignore-existing #$ex
+if [ "$?" -ne "0" ] 2>/dev/null ;then
+	echo "$filename" >> "$cptodriveFAIL"
+else
+	echo "$filename" >> "$cptodriveCOMP"
+fi
+return
+}
+
+copytodriveAUTO() {
+if [ $# -eq "0" ] 2>/dev/null ;then	
+	for file in * ;do
+		filename "$file"
+		if [ -e "$file" ] ;then
+			#text=$(grep -wF "$filename" "$cptodriveCOMP")
+			if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+				#echo -e "${YELLOW}[$filename]${NC} ${GREEN}Da Copy Sang Drive${NC} ${YELLOW}[vietle]${NC}"
+				echo "$filename" >> "$cptodriveDONE"
+			else
+				echo -e "\n${LIGHTBLUE}Xac Nhan${NC} ${YELLOW}[$filename]${NC} ${LIGHTBLUE}Chua Copy Sang Drive${NC} ${YELLOW}[vietle]${NC}"
+				copytodrive "$file"
+			fi
+		fi
+	done
+else
+	for file in "$@" ;do
+		filename "$file"
+		if [ -e "$file" ] ;then
+			#text="$(grep -wF "$filename" "$cptodriveCOMP")"
+			if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+				#echo -e "${YELLOW}[$filename]${NC} ${GREEN}Da Copy Sang Drive${NC} ${YELLOW}[vietle]${NC}"
+				echo "$filename" >> "$cptodriveDONE"
+			else
+				echo -e "${LIGHTBLUE}Xac Nhan${NC} ${YELLOW}[$filename]${NC} ${LIGHTBLUE}Chua Copy Sang Drive${NC} ${YELLOW}[vietle]${NC}\n"
+				copytodrive "$file"
+			fi
+		else 
+			echo -e "\n${RED}Khong Ton Tai File${NC} ${YELLOW}[$filename]${NC}"
+			echo -e "${RED}Please Check Again${NC}\n"
+			echo "$filename Ko Ton Tai" >> "$cptodriveFAIL"
+		fi
+	done
+fi
+# List File Done or Completed or FAIL
+checkfile
+return
+}
+
+# Function File is Completed or Done or Fail
+
+menuRclone() {
+cat << _EOF_
+
+Main Menu: What would you like to do?
+
+Press the number of your choice:
+
+	1 - Copy File Sang Drive Mac Dinh /syncc/
+	2 - Tao Thu Muc Dich Den /syncc/FOLDER_HERE/
+	3 - Chi Copy File Subtitle .srt
+	4 - Custom
+	
+	0 - Exit
+	
+_EOF_
+
+# Wait for user to make a choice and run chosen functions:	
+read -r -n 1 -s choice;
+
+	case $choice in 
+		
+		1 )	# Copy File Sang Drive Mac Dinh /syncc/
+			clear
+			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			copytodriveAUTO "$@"
+			
+		;;
+		
+		2 )  # Tao Thu Muc Dich Den /syncc/FOLDER_HERE/
+			clear
+			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			echo -e "${LIGHTCYAN}Ten Thu Muc Muon Tao: ${NC}"
+			read -r folder
+			{ [[ -n "$folder" ]] 2>/dev/null && direx="/"; } || echo -e "${LIGHTBLUE}Xac Nhan Tao Them Thu muc${NC} ${YELLOW}[vietle:/$rfd/$folder$direx]${NC}"
+			copytodriveAUTO "$@"
+			
+		;;
+		
+		3 )	# Chi Copy File Subtitle .srt
+			clear
+			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			for file in .*srt ;do
+				filename "$file"
+				if [ -f "$file" ] 2>/dev/null ;then
+					#text="$(grep -wF "$filename" "$cptodriveCOMP")"
+					if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+						# echo -e "${YELLOW}[$filename]${NC} ${GREEN}Da Copy Sang Drive${NC} ${YELLOW}[vietle]${NC}"
+						echo "$filename" >> "$cptodriveDONE"
+				    else
+						copytodrive "$file"
+					fi
+				else 
+					echo -e "${RED}Khong Ton Tai File${NC} ${YELLOW}[$filename]${NC}"
+					echo -e "${RED}Please Check Again${NC}"
+					echo "$filename Ko Ton Tai" >> "$cptodriveFAIL"
+				fi
+			done
+				## List file Completed or Fail or Done
+			checkfile
+		
+		;;
+		
+		4 ) # Custom
+			clear
+			echo -e "Nhap Thu muc root folder /Default ${ORANGE}/$rfd/${NC} : "
+			read -r rfd
+			{ [[ -z "$rfd" ]] && rfd="syncc"; } || echo -e "Thay Thanh Cong Root Folder vietle:${ORANGE}/$rfd/${NC}\n"
+			echo -e "Nhap Folder muon them /Default ${ORANGE}$folder${NC} : "
+			read -r folder
+			{ [[ -n "$folder" ]] && direx="/"; } || echo "Them Thanh cong Folder ${ORANGE}vietle:/$rfd/$folder$direx${NC}"
+			#echo -e "Nhap "drive-chunk-size" /Default ${ORANGE}$dcz${NC} : "
+			#read -r dcz
+			#[[ -z "$dcz" ]] && dcz="256M"
+			#echo -e "Nhap "transfers" /Default ${ORANGE}$tf${NC} : "
+			#read -r tf
+			#[[ -z "$tf" ]] && tf="16"
+			#echo -e "Nhap "checkers" /Default ${ORANGE}$ck${NC} : "
+			#read -r ck
+			#[[ -z "$ck" ]] && ck="32"
+			#echo -e "Nhap Them Flag: "
+			#read -r ex
+			echo -e "\n------------------------------ " >> "$cptodriveCOMP"
+			copytodriveAUTO "$@"
+			## List file Completed or Fail or Done
+			checkfile
+		
+		;;
+		
+		0 ) #Exit
+			return
+			clear
+			echo -e "${LIGHTBLUE}Da Out${NC}"
+		;;
+		
+		* ) # Not Valid Choice
+			clear
+			echo -e "\n${RED}Not a valid choice${NC}"
+			echo -e "${RED}Please choice some number${NC}\n"
+			menuRclone "$@"
+		;;
+		
+	esac
+				
+}
+
+################ Running Code ######################
+####################################################
+clear
+#Info
+echo -e "\n${ORANGE}+----------------------+${NC}"
+echo -e "${ORANGE}| Rclone Copy To Drive |${NC}"
+echo -e "${ORANGE}+----------------------+${NC}\n"
+# Run Menu Rclone
+menuRclone "$@"
+echo -e "\n${LIGHTCYAN}DONE ALL${NC}"
+echo -e "${LIGHTCYAN}THANK YOU FOR USING${NC}"
