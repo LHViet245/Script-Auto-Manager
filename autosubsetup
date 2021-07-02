@@ -154,7 +154,7 @@ fi
 # Install fuzzywuzzy .Source: "https://github.com/seatgeek/fuzzywuzzy"
 if [ $(python3.9 -m  pip list | grep -c fuzzywuzzy) -eq 0 ] ;then
 	echo "Installing fuzzywuzzy"
-	! python3.9 setup.py install && echo "Install fuzzywuzzy Fail" && exit
+	! python3.9 -m pip install fuzzywuzzy && echo "Install fuzzywuzzy Fail" && exit
 fi
 
 # Install autosub .Source: "https://github.com/BingLingGroup/autosub"
