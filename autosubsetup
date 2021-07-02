@@ -34,11 +34,6 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-if [ $(dpkg-query -W -f='${Status}' systemd 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-	echo "Installing systemd"
-	apt-get -yqq install systemd 2>&1 >> /dev/null
-fi
-
 # kill apt-daily.service if running 
 if [[ $(systemctl list-units --all apt-daily.service | fgrep -c apt-daily.service) -gt 0 ]]; then
   systemctl stop apt-daily.service > /dev/null 2>&1
@@ -86,7 +81,7 @@ if [ $(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed") -
 fi
 
 if [ $(dpkg-query -W -f='${Status}' python3.9-dev 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-	echo "Installing curl"
+	echo "Installing curl python3.9-dev"
 	apt-get -yqq install python3.9-dev 2>&1 >> /dev/null
 fi
 
@@ -145,19 +140,19 @@ fi
 # Install ffmpeg-normalize .Source: "https://github.com/slhck/ffmpeg-normalize"
 if [ $(python3.9 -m  pip list | grep -c ffmpeg-normalize) -eq 0 ] ;then
 	echo "Installing ffmpeg-normalize"
-	python3.9 -m pip install ffmpeg-normalize
+	! python3.9 -m pip install ffmpeg-normalize && echo "Install ffmpeg-normalize Fail" && exit
 fi
 
 # Install python-Levenshtein .Source: "https://github.com/ztane/python-Levenshtein"
 if [ $(python3.9 -m  pip list | grep -c python-Levenshtein) -eq 0 ] ;then
 	echo "Installing python-Levenshtein"
-	python3.9 -m pip install python-Levenshtein
+	! python3.9 -m pip install python-Levenshtein && echo "Install python-Levenshtein Fail" && exit
 fi
 
 # Install fuzzywuzzy .Source: "https://github.com/seatgeek/fuzzywuzzy"
 if [ $(python3.9 -m  pip list | grep -c fuzzywuzzy) -eq 0 ] ;then
 	echo "Installing fuzzywuzzy"
-	python3.9 -m pip install fuzzywuzzy
+	! python3.9 setup.py install && echo "Install fuzzywuzzy Fail" && exit
 fi
 
 # Install autosub .Source: "https://github.com/BingLingGroup/autosub"
@@ -193,13 +188,13 @@ git clone -q https://github.com/LHViet245/Script-Easy-Autosub /etc/atsinstall
 cd /etc/atsinstall
 ln -sf /etc/atsinstall/scripts/* /usr/local/bin
 ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
-
-
-
+chmod +x /usr/local/bin/atsrun
+chmod +x /usr/local/bin/cptodrive
 
 echo "Installation complete"
 echo
-echo "You can now run .autosub and .cptodrive"
+echo "Run rclone config tho config your dirve"
+echo "You can now run atsrun and cptodrive"
 
 if [ "$rundir" != "/etc/atsinstall" ]; then
     rm -f $rundir/autosubsetup
