@@ -100,6 +100,8 @@ if ! python3.9 -m pip --version 2>/dev/null;then
 	rm get-pip.py
 fi
 
+echo "Hay ghe"
+
 if [ "$(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	if [ "$(apt-cache show ffmpeg | grep -c "Version: 7:4.*")" -eq 0 ] ;then
 		echo "Installing ffmpeg Version 4.x"
