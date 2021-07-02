@@ -1,0 +1,49 @@
+#! /bin/bash
+##################################################################################################################################
+#############################################
+#
+# Script made by Starfall 
+# Auto autosub By BingLingGroup .Soucre: "https://github.com/BingLingGroup/autosub"
+# Auto Translate
+# 
+#
+##############################################
+##################################################################################################################################
+
+# History patch
+autosubcomp="$HOME/check/AutosubCOMP.txt"
+autosubfail="$HOME/check/AutosubFAIL.txt"
+autosubdone="$HOME/check/AutosubDONE.txt"
+
+[ ! -d "$HOME/check" ] && mkdir "$HOME/check"
+[ ! -f "$autosubcomp" ] && touch "$HOME/check/AutosubCOMP.txt"
+[ ! -f "$autosubfail" ] && touch "$HOME/check/AutosubFAIL.txt"
+[ ! -f "$autosubdone" ] && touch "$HOME/check/AutosubDONE.txt"
+
+# Variable
+S=en-us
+mnrs=0.5
+mxrs=6
+et=0
+f=srt
+d=vi
+src=en
+tailnum=$(($# + 6))
+
+# Variable Color for text
+LIGHTCYAN=$'\e[1;37m'
+ORANGE=$'\e[0;33m'
+GREEN=$'\e[0;32m'
+RED=$'\e[0;31m'
+YELLOW=$'\e[1;33m'
+LIGHTBLUE=$'\e[1;34m'
+NC=$'\e[0m' ## No Color
+
+# Function Basename
+filebasename() {
+	filename=$(basename "$file")
+	name=${filename%.*}
+return
+}
+
+
