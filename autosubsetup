@@ -68,11 +68,6 @@ if [ $(dpkg-query -W -f='${Status}' git 2>/dev/null | grep -c "ok installed") -e
 	apt-get -yqq install git 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' wget 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-	echo "Installing wget"
-	apt-get -yqq install wget 2>&1 >> /dev/null
-fi
-
 if [ $(dpkg-query -W -f='${Status}' python3.9 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
 	echo "Installing python3.9"
 	add-apt-repository ppa:deadsnakes/ppa 2>&1 >> /dev/null
@@ -92,11 +87,11 @@ fi
 
 if [ $(dpkg-query -W -f='${Status}' python3.9-dev 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
 	echo "Installing curl"
-	apt-get -yqq install python3.9 2>&1 >> /dev/null
+	apt-get -yqq install python3.9-dev 2>&1 >> /dev/null
 fi
 
 if [ $(dpkg-query -W -f='${Status}' gcc 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-	echo "Installing curl"
+	echo "Installing gcc"
 	apt-get -yqq install gcc 2>&1 >> /dev/null
 fi
 
