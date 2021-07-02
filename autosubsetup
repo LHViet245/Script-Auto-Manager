@@ -13,7 +13,7 @@
 ##################################################################################################################################
 
 PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/bin:/sbin
-rundir=$(dirname $(readlink -f $0))
+rundir="$(dirname "$(readlink -f "$0")")"
 
 # function to ask user for y/n response
 ask_user(){
@@ -35,7 +35,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # kill apt-daily.service if running
-if [ $(dpkg-query -W -f='${Status}' systemd 2>/dev/null | grep -c "ok installed") -ne 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' systemd 2>/dev/null | grep -c "ok installed")" -ne 0 ]; then
 	if [[ $(systemctl list-units --all apt-daily.service | fgrep -c apt-daily.service) -gt 0 ]]; then
 	systemctl stop apt-daily.service > /dev/null 2>&1
 	systemctl kill --kill-who=all apt-daily.service > /dev/null 2>&1
@@ -45,49 +45,49 @@ fi
 
 apt-get -qq update
 
-if [ $(dpkg-query -W -f='${Status}' unzip 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' unzip 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing apt-utils"
 	apt-get -yqq install unzip 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' apt-utils 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' apt-utils 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing apt-utils"
 	apt-get -yqq install apt-utils 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' software-properties-common 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' software-properties-common 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing software-properties-common"
 	apt-get -yqq install software-properties-common 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' git 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' git 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing git"
 	apt-get -yqq install git 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' python3.9 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' python3.9 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing python3.9"
 	add-apt-repository ppa:deadsnakes/ppa 2>&1 >> /dev/null
 	apt-get -qq update
 	apt-get -yqq install python3.9
 fi
 
-if [ $(dpkg-query -W -f='${Status}' python3.9-distutils 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' python3.9-distutils 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing python3.9-distutils"
 	apt-get -yqq install python3.9-distutils 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing curl"
 	apt-get -yqq install curl 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' python3.9-dev 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' python3.9-dev 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing curl python3.9-dev"
 	apt-get -yqq install python3.9-dev 2>&1 >> /dev/null
 fi
 
-if [ $(dpkg-query -W -f='${Status}' gcc 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+if [ "$(dpkg-query -W -f='${Status}' gcc 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
 	echo "Installing gcc"
 	apt-get -yqq install gcc 2>&1 >> /dev/null
 fi
@@ -100,8 +100,8 @@ if ! python3.9 -m pip --version 2>/dev/null;then
 	rm get-pip.py
 fi
 
-if [ $(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-	if [ $(apt-cache show ffmpeg | grep -c "Version: 7:4.*") -eq 0 ] ;then
+if [ "$(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
+	if [ "$(apt-cache show ffmpeg | grep -c "Version: 7:4.*")" -eq 0 ] ;then
 		echo "Installing ffmpeg Version 4.x"
 		add-apt-repository ppa:jonathonf/ffmpeg-4
 		apt-get -qq update
@@ -111,9 +111,9 @@ if [ $(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed")
 		apt-get -yqq install ffmpeg
 	fi
 else
-	if [ $(ffmpeg -version | grep -c "ffmpeg version 4.*") -eq 0 ]; then
+	if [ "$(ffmpeg -version | grep -c "ffmpeg version 4.*")" -eq 0 ]; then
 		apt-get -yqq uninstall ffmpeg
-		if [ $(apt-cache show ffmpeg | grep -c "Version: 7:4.*") -eq 0 ] ;then
+		if [ "$(apt-cache show ffmpeg | grep -c "Version: 7:4.*")" -eq 0 ] ;then
 			echo "Installing ffmpeg Version 4.x"
 			add-apt-repository ppa:jonathonf/ffmpeg-4
 			apt-get -qq update
@@ -126,10 +126,10 @@ else
 fi
 
 # Install langcode .Source: "https://github.com/rspeer/langcodes"
-if [ $(python3.9 -m  pip list | grep -c langcodes) -eq 0 ] ;then
+if [ "$(python3.9 -m  pip list | grep -c langcodes)" -eq 0 ] ;then
 	echo "Installing langcodes"
 	git clone -q https://github.com/rspeer/langcodes
-	cd langcodes
+	cd langcodes || { echo "cd to langcodes Failure"; exit 1; }
 	if ! python3.9 setup.py install;then
 		echo "Install langcodes fail"
 		exit
@@ -140,26 +140,26 @@ if [ $(python3.9 -m  pip list | grep -c langcodes) -eq 0 ] ;then
 fi
 
 # Install ffmpeg-normalize .Source: "https://github.com/slhck/ffmpeg-normalize"
-if [ $(python3.9 -m  pip list | grep -c ffmpeg-normalize) -eq 0 ] ;then
+if [ "$(python3.9 -m  pip list | grep -c ffmpeg-normalize)" -eq 0 ] ;then
 	echo "Installing ffmpeg-normalize"
 	! python3.9 -m pip install ffmpeg-normalize && echo "Install ffmpeg-normalize Fail" && exit
 fi
 
 # Install python-Levenshtein .Source: "https://github.com/ztane/python-Levenshtein"
-if [ $(python3.9 -m  pip list | grep -c python-Levenshtein) -eq 0 ] ;then
+if [ "$(python3.9 -m  pip list | grep -c python-Levenshtein)" -eq 0 ] ;then
 	echo "Installing python-Levenshtein"
 	! python3.9 -m pip install python-Levenshtein && echo "Install python-Levenshtein Fail" && exit
 fi
 
 # Install fuzzywuzzy .Source: "https://github.com/seatgeek/fuzzywuzzy"
-if [ $(python3.9 -m  pip list | grep -c fuzzywuzzy) -eq 0 ] ;then
+if [ "$(python3.9 -m  pip list | grep -c fuzzywuzzy)" -eq 0 ] ;then
 	echo "Installing fuzzywuzzy"
 	! python3.9 -m pip install fuzzywuzzy && echo "Install fuzzywuzzy Fail" && exit
 fi
 
 # Install autosub .Source: "https://github.com/BingLingGroup/autosub"
-if [ $(python3.9 -m  pip list | grep -c autosub) -eq 0 ] ;then
-	if [ $(python3.9 -m  pip show chardet | grep -c "Version: 3.*") -eq 0 ] ;then
+if [ "$(python3.9 -m  pip list | grep -c autosub)" -eq 0 ] ;then
+	if [ "$(python3.9 -m  pip show chardet | grep -c "Version: 3.*")" -eq 0 ] ;then
 		echo "Installing chardet==3.*"
 		python3.9 -m  pip install chardet==3.*
 	fi
@@ -187,7 +187,7 @@ echo "Installing atsinstall"
 cd
 rm -fr /etc/atsinstall
 git clone -q https://github.com/LHViet245/Script-Easy-Autosub /etc/atsinstall
-cd /etc/atsinstall
+cd /etc/atsinstall || { echo "cd to /etc/atsinstall Failure"; exit 1; }
 ln -sf /etc/atsinstall/scripts/.atsrun /usr/local/bin
 ln -sf /etc/atsinstall/scripts/.cptodrive /usr/local/bin
 ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
@@ -200,5 +200,5 @@ echo "Run rclone config tho config your dirve"
 echo "You can now run .atsrun and .cptodrive"
 
 if [ "$rundir" != "/etc/atsinstall" ]; then
-    rm -f $rundir/autosubsetup
+    rm -f "$rundir/autosubsetup"
 fi
