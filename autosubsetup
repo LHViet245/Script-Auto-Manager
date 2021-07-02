@@ -34,11 +34,13 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-# kill apt-daily.service if running 
-if [[ $(systemctl list-units --all apt-daily.service | fgrep -c apt-daily.service) -gt 0 ]]; then
-  systemctl stop apt-daily.service > /dev/null 2>&1
-  systemctl kill --kill-who=all apt-daily.service > /dev/null 2>&1
-  sleep 5
+# kill apt-daily.service if running
+if [ $(dpkg-query -W -f='${Status}' systemd 2>/dev/null | grep -c "ok installed") -ne 0 ]; then
+	if [[ $(systemctl list-units --all apt-daily.service | fgrep -c apt-daily.service) -gt 0 ]]; then
+	systemctl stop apt-daily.service > /dev/null 2>&1
+	systemctl kill --kill-who=all apt-daily.service > /dev/null 2>&1
+	sleep 5
+	fi
 fi
 
 apt-get -qq update
@@ -186,10 +188,10 @@ cd
 rm -fr /etc/atsinstall
 git clone -q https://github.com/LHViet245/Script-Easy-Autosub /etc/atsinstall
 cd /etc/atsinstall
-ln -sf /etc/atsinstall/scripts/* /usr/local/bin
+ln -sf /etc/atsinstall/scripts/.* /usr/local/bin
 ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
-chmod +x /usr/local/bin/atsrun
-chmod +x /usr/local/bin/cptodrive
+chmod +x /usr/local/bin/.atsrun
+chmod +x /usr/local/bin/.cptodrive
 
 echo "Installation complete"
 echo
