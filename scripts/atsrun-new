@@ -1,5 +1,5 @@
 #! /bin/bash
-##################################################################################################################################
+######################################################################################
 #############################################
 #
 # Script made by Starfall 
@@ -8,7 +8,8 @@
 # 
 #
 ##############################################
-##################################################################################################################################
+######################################################################################
+
 
 # History patch
 autosubcomp="$HOME/check/AutosubCOMP.txt"
@@ -21,13 +22,14 @@ autosubdone="$HOME/check/AutosubDONE.txt"
 [ ! -f "$autosubdone" ] && touch "$HOME/check/AutosubDONE.txt"
 
 # Variable
-S=en-us
-mnrs=0.5
-mxrs=6
-et=0
-f=srt
-d=vi
-src=en
+S="ja-jp"
+mnrs=0.3
+mxrs=5
+mxcs=0.3
+et=2
+f="srt"
+d="vi"
+src="en"
 tailnum=$(($# + 6))
 
 # Variable Color for text
@@ -46,4 +48,272 @@ filebasename() {
 return
 }
 
+# Function Show Config
+config() {
+echo -e "${LIGHTCYAN}\n==============CONFIG==============${NC}"
+echo -e "${LIGHTCYAN}Speed Language:        ${YELLOW}$S${NC}     |${NC}"
+echo -e "${LIGHTCYAN}SRC Language:          ${YELLOW}$src${NC}        |${NC}"
+echo -e "${LIGHTCYAN}Destination Language:  ${YELLOW}$d${NC}        |${NC}"
+echo -e "${LIGHTCYAN}Minimum Region Size:   ${YELLOW}$mnrs${NC}       |${NC}"
+echo -e "${LIGHTCYAN}Maximum Region Size:   ${YELLOW}$mxrs${NC}         |${NC}"
+echo -e "${LIGHTCYAN}Max Continuous SL:     ${YELLOW}$mxcs${NC}       |${NC}"
+echo -e "${LIGHTCYAN}Energy Threshold:      ${YELLOW}$et${NC}         |${NC}"
+echo -e "${LIGHTCYAN}Subtitles Format:      ${YELLOW}$f${NC}       |${NC}"
+echo -e "${LIGHTCYAN}===================================${NC}\n"
+}
 
+# function to ask user for y/n response
+ask_user(){
+local answer
+while true
+  do
+    read answer
+    case $answer in [Yy]* ) return 0 ;;
+                    [Nn]* ) return 1 ;;
+                        * ) echo "Enter y or n";;
+    esac
+  done
+}
+
+# Function Cleanup
+cleanAutosub() {
+	sudo find /tmp -type f -name "*.flac" -delete 2>/dev/null
+	sudo find /tmp -type f -name "*.wav" -delete 2>/dev/null
+return
+}
+
+# Run autosub with Audio Processing
+autosub-with-ap () {
+	echo -e "\n${LIGHTBLUE}Starting Autosub${NC} ${YELLOW}[$filename]${NC}"
+	echo -e "\n${LIGHTBLUE}Autosub With Audio Processing (-ap)${NC}\n"
+	autosub \
+	--input "$file"  \
+	-sapi gcsv1 \
+	--speech-language $S \
+	--min-region-size $mnrs \
+	--max-region-size $mxrs \
+	--energy-threshold $et \
+	--max-continuous-silence $mxcs \
+	--not-strict-min-length \
+	--drop-empty-regions \
+	--yes \
+	--audio-process y
+	sleep 0.3
+	cleanAutosub
+}
+
+# Run autosub without Audio Processing
+autosub-without-ap () {
+	echo -e "\n${LIGHTBLUE}Starting Autosub${NC} ${YELLOW}[$filename]${NC}"
+	echo -e "\n${LIGHTBLUE}Autosub Without Audio Processing (-ap)${NC}\n"
+	autosub \
+	--input "$file"  \
+	-sapi gcsv1 \
+	--speech-language $S \
+	--min-region-size $mnrs \
+	--max-region-size $mxrs \
+	--energy-threshold $et \
+	--max-continuous-silence $mxcs \
+	--not-strict-min-length \
+	--drop-empty-regions \
+	--yes \
+	sleep 0.3
+	cleanAutosub
+}
+
+# Function Translate Subtitle
+# Rename Subtitle to .srt only and Remove file Subtitle Origin
+Translate() {
+	echo -e "\n${LIGHTCYAN}==================================${NC}"
+echo -e "         ${LIGHTCYAN}CONFIG TRANSLATE        |${NC}"
+echo -e "${LIGHTCYAN}SRC Language: 	       ${YELLOW}$S${NC}     |${NC}"
+echo -e "${LIGHTCYAN}Destination Language:  ${YELLOW}$d${NC}        |${NC}"
+echo -e "${LIGHTCYAN}==================================${NC}\n"
+echo -e "${LIGHTBLUE}Starting Translate${NC} ${YELLOW}[$filename]${NC}\n"
+	autosub \
+	--input "$PWD/$name.$S.$f" \
+	--src-language $src \
+	--dst-language $d \
+	--format $f
+	sleep 0.3
+	! mv "$PWD/$name.$S.$d.$f" "$name.$f" 2>/dev/null && rm "$name.$S.$f" 2>/dev/null
+}
+
+
+
+
+
+
+
+
+
+
+
+
+# Function List Menu
+menuAutosub() {
+cat << _EOF_
+
+Main Menu: What would you like to do?
+
+Press the number of your choice:
+
+	1 - Autosub Japanese
+	2 - Autosub Chinese (Simplified, China)
+	3 - Autosub English
+	4 - Translate Subtitle (Japanese Default)
+	5 - Custom
+	
+	0 - Exit
+	
+_EOF_
+
+# Wait for user to make a choice and run chosen functions:
+read -r -n 1 -s choice;
+
+	case $choice in
+	
+		1 )  # Autosub Japanese
+			echo -e "\n-------------------" >> "$autosubcomp"
+			clear
+			CASEautosub "$@"
+		;;
+			
+		2 )	# Autosub Chinese (Simplified, China)
+			echo -e "\n-------------------" >> "$autosubcomp"
+			clear
+			S="cmn-hans-cn"
+			src="zh-cn"
+			CASEautosub "$@"
+		;;
+			
+		3 )	# Autosub English
+			echo -e "\n-------------------" >> "$autosubcomp"
+			clear
+			S="en-us"
+			src="en"
+			CASEautosub "$@"
+		;;
+			
+		4 )	# Translate (Japanese)
+			read -n 1 -s -p -r 'Tuy Chinh ? (y/n): ' option
+			echo 
+			# Option for Custom Translate
+			if { [ "$option" == "y" ] || [ "$option" == "Y" ]; } 2>/dev/null ;then
+				read -p -r 'Ngon ngu muon dich /src? ' src1
+				# Display list SRC Support
+				if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>/dev/null ;then
+					echo -e "${LIGHTBLUE}$(autosub -lsc | grep -i "$src1")${NC}\n"
+					read -p -r 'Nhap thong so "SRC" nhu tren: ' src
+				fi
+				echo 
+				read -p -r 'Ngon ngu muon dich sang /d? ' d1
+				# Display list D Support
+				if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
+					echo -e "${LIGHTBLUE}$(autosub -ltc | grep -i "$d1")${NC}\n"
+					read -p -r 'Nhap thong so "D" nhu tren: ' d
+				fi
+				
+			fi
+			clear
+			for file in "$@" ;do
+			# Info for Base Name
+			filebasename "$file"
+			# Translate Subtitle
+			Translate
+			if [ "$?" -eq "0" ] 2>/dev/null ;then
+				echo -e "\n${GREEN}[$filename] is DONE${NC}"
+			else
+				echo -e "${YELLOW}[$filename]${NC} ${RED}is FAIL${NC}"
+				echo -e "${RED}Please Translate Again${NC}"
+			fi
+			done
+		;;
+			
+		5 ) # Custom
+			clear
+			read -p -r 'Nhap Ngon Ngu Muon Dich Sang: ' S1
+			# Display S Support
+			if [ -n "$(autosub -lsc | grep -i "$S1")" ] 2>dev/null ;then
+				echo -e "Nhap Ngon Ngu S Nhu Tren /Default $S: "
+				read -r S
+				[[ -z "$S" ]] && S="ja-jp"
+			fi
+			read -p -r 'Nhap Ngon Ngu Nhan Dang Dich SRC: ' src1
+			# Display SRC Support
+			if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>dev/null ;then
+				echo -e "Nhap Ngon Ngu Dich SRC Nhu Tren /Default ${ORANGE}$src${NC}: "
+				read -r src
+				[[ -z "$src" ]] && src="ja"
+			fi
+			read -p -r 'Nhap ngon ngu muon dich sang D: ' d1
+			# Display D Support
+			if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
+				echo -e "Nhap Ngon Ngu Muon Dic Sang D /Default ${ORANGE}$d${NC}: "
+				read -r d
+				[[ -z "$d" ]] && d="vi"
+			fi
+			echo -e "Nhap Threesold et /Default ${ORANGE}$et${NC} : "
+			read -r et
+			[[ -z "$et" ]] && et="5"
+			echo -e "Nhap Dinh Dang Sub /Default ${ORANGE}$f${NC} : "
+			read -r f
+			[[ -z "$f" ]] && f="srt"
+			echo -e "Nhap mnrs /Default ${ORANGE}$mnrs${NC} : "
+			read -r mnrs
+			[[ -z "$mnrs" ]] && mnrs="0.5"
+			echo -e "Nhap mxrs /Default ${ORANGE}$mxrs${NC} : "
+			read -r mxrs
+			[[ -z "$mxrs" ]] && mxrs="4"
+			clear
+			echo -e "\n--------------------------------- " >> "$autosubcomp"
+			CASEautosub "$@"
+		;;
+		
+		0 )	# Break Menu
+			return
+			clear
+			echo -e "${LIGHTBLUE}Da Out${NC}"
+		;;
+			
+		* )	# Not Valid Choice
+			clear
+			echo -e "\n${RED}Not a valid choice${NC}"
+			echo -e "${RED}Please choice some number${NC}\n"
+			menuAutosub "$@"
+		;;
+		
+		
+			
+	esac
+}
+
+################### Running Code ######################
+#######################################################
+
+# Info
+clear
+echo -e "${ORANGE}+-----------------------+${NC}"
+echo -e "${ORANGE}|Autosub Translate Video|${NC}"
+echo -e "${ORANGE}+-----------------------+${NC}\n"
+
+# Python 3.8 Env for Autosub
+if [ -f "$HOME/autosub-env/env/bin/activate" ] ;then
+source "$HOME/autosub-env/env/bin/activate" 2>/dev/null
+fi
+
+# Check yes/no and Autosub for each file in folder
+	if [ "$?" -eq "0" ] 2>/dev/null ;then
+		menuAutosub "$@"
+	else
+		echo -e "\n${RED}Fail to Env Python for Autosub${NC}"
+		echo -e "${RED}Please Install Python Env and Install Autosub${NC}\n"
+		exit 1
+	fi
+if [ -f "$HOME/autosub-env/env/bin/activate" ] ;then
+deactivate
+fi
+
+echo -e "\n${LIGHTCYAN}DONE ALL${NC}"
+echo -e "${LIGHTCYAN}THANK YOU FOR USING${NC}"
+cleanAutosub 2>/dev/null
