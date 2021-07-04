@@ -15,7 +15,6 @@
 autosubcomp="$HOME/check/AutosubCOMP.txt"
 autosubfail="$HOME/check/AutosubFAIL.txt"
 autosubdone="$HOME/check/AutosubDONE.txt"
-
 [ ! -d "$HOME/check" ] && mkdir "$HOME/check"
 [ ! -f "$autosubcomp" ] && touch "$HOME/check/AutosubCOMP.txt"
 [ ! -f "$autosubfail" ] && touch "$HOME/check/AutosubFAIL.txt"
@@ -46,7 +45,6 @@ filebasename() {
 	filename=$(basename "$file")
 	filepath=$(dirname "$file")
 	name=${filename%.*}
-return
 }
 
 # Function Show Config
@@ -132,18 +130,13 @@ echo -e "${LIGHTCYAN}Destination Language:  ${YELLOW}$d${NC}        |${NC}"
 echo -e "${LIGHTCYAN}==================================${NC}\n"
 echo -e "${LIGHTBLUE}Starting Translate${NC} ${YELLOW}[$filename]${NC}\n"
 	autosub \
-	--input "$PWD/$name.$S.$f" \
+	--input "$filepath/$name.$S.$f" \
 	--src-language $src \
 	--dst-language $d \
 	--format $f
 	sleep 0.3
 	! mv "$filepath/$name.$S.$d.$f" "$filepath/$name.$f" 2>/dev/null && rm "$filepath/$name.$S.$f" 2>/dev/null
 }
-
-
-
-
-
 
 control-autosub () {
 clear
@@ -159,7 +152,7 @@ if [ $# -eq 0 ] ;then
 	echo -e "\n${GREEN}AUTOSUB ALL VIDEO FILES IN FOLDERS${NC}\n"
 	find . -type f \( -name '*.mp4' -o -name '*.mkv' -o -name '*.avi' -o -name '*.wmv' -o -name '*.ts' -o -name '*.TS' -o -name '*.mov' -o -name '*.m4v' -o -name '*.flv' \) -exec echo '{}' \; > "$HOME/listfile.txt"
 	while IFS= read -r file ;do
-		if [ -f "$file" ] ;then
+		if [ -f "$file" ] 2>/dev/null;then
 			filebasename "$file"
 			## Check file Completed
 			if [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] 2>/dev/null ;then 
@@ -167,7 +160,7 @@ if [ $# -eq 0 ] ;then
 				echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 			else
 				config
-				! ( if [ $noap == "yes" ] ;then
+				! ( if [ $noap == "yes" ] 2>/dev/null;then
 					autosub-without-ap "$file"
 				else
 					! autosub-with-ap "$file" && autosub-without-ap "$file"
@@ -196,7 +189,7 @@ else
 			echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 		else
 			# Running Autosub
-			! ( if [ $noap == "yes" ] ;then
+			! ( if [ $noap == "yes" ] 2>/dev/null;then
 				autosub-without-ap "$file"
 			else
 				! autosub-with-ap "$file" && autosub-without-ap "$file"
@@ -243,7 +236,7 @@ Press the number of your choice:
 	2 - Autosub Chinese (Simplified, China)
 	3 - Autosub English
 	4 - Translate Subtitle (Japanese Default)
-	5 - Custom
+	5 - Custom Autosub
 	
 	0 - Exit
 	
@@ -277,6 +270,7 @@ read -r -n 1 -s choice;
 					# Info for Base Name
 					filebasename "$file"
 					# Translate Subtitle
+					echo -e "${LIGHTBLUE}Translating ${YELLOW}[$filename]${NC} $S to $d ${NC}"
 					if ! Translate ;then
 						echo -e "${YELLOW}[$filename]${NC} ${RED}is FAIL${NC}"
 						echo -e "${RED}Please Translate Again${NC}"
@@ -303,54 +297,79 @@ read -r -n 1 -s choice;
 				else
 					echo -e "${RED}Language does not exist or does not support !${NC}"
 				fi
+
+				for file in "$@" ;do
+					# Info for Base Name
+					filebasename "$file"
+					# Translate Subtitle
+					echo -e "${LIGHTBLUE}Translating ${YELLOW}[$filename]${NC} $S to $d ${NC}"
+					if ! Translate ;then
+						echo -e "${YELLOW}[$filename]${NC} ${RED}is FAIL${NC}"
+						echo -e "${RED}Please Translate Again${NC}"
+					else
+						echo -e "\n${GREEN}Translate [$filename] is DONE${NC}"
+					fi
+				done
 			fi
 			clear
 		;;
 			
 		5 ) # Custom
 			clear
-			read -p -r 'Nhap Ngon Ngu Muon Dich Sang: ' S1
+			read -p -r 'Enter Video Language: ' S1
 			# Display S Support
 			if [ -n "$(autosub -lsc | grep -i "$S1")" ] 2>dev/null ;then
-				echo -e "Nhap Ngon Ngu S Nhu Tren /Default $S: "
+				echo -e "${LIGHTCYAN}Enter Speech Language parameters As Above /Default ${ORANGE}$S${NC} : ${NC}"
+				echo -e "${ORANGE}Leave blank to set default${NC}"
 				read -r S
-				[[ -z "$S" ]] && S="ja-jp"
+				[[ -z "$S" ]] 2>/dev/null && S="ja-jp"
 			fi
-			read -p -r 'Nhap Ngon Ngu Nhan Dang Dich SRC: ' src1
+			read -p -r 'Enter translation source language SRC: ' src1
 			# Display SRC Support
 			if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>dev/null ;then
-				echo -e "Nhap Ngon Ngu Dich SRC Nhu Tren /Default ${ORANGE}$src${NC}: "
+				echo -e "${LIGHTCYAN}Enter the "SRC Language" parameter as above /Default ${ORANGE}$src${NC}: ${NC}"
+				echo -e "${ORANGE}Leave blank to set default${NC}"
 				read -r src
-				[[ -z "$src" ]] && src="ja"
+				[[ -z "$src" ]] 2>/dev/null && src="ja"
 			fi
-			read -p -r 'Nhap ngon ngu muon dich sang D: ' d1
+			read -p -r 'Enter translation destination language D: ' d1
 			# Display D Support
 			if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
-				echo -e "Nhap Ngon Ngu Muon Dic Sang D /Default ${ORANGE}$d${NC}: "
+				echo -e "${LIGHTCYAN}Enter the "DST Language" parameter as above /Default ${ORANGE}$d${NC}: ${NC}"
+				echo -e "${ORANGE}Leave blank to set default${NC}"
 				read -r d
-				[[ -z "$d" ]] && d="vi"
+				[[ -z "$d" ]] 2>/dev/null && d="vi"
 			fi
-			echo -e "Nhap Threesold et /Default ${ORANGE}$et${NC} : "
+			echo -e "${LIGHTCYAN}Enter energy threshold -et /Default ${ORANGE}$et${NC} : ${NC}"
+			echo -e "${ORANGE}Leave blank to set default${NC}"
 			read -r et
-			[[ -z "$et" ]] && et="5"
-			echo -e "Nhap Dinh Dang Sub /Default ${ORANGE}$f${NC} : "
+			[[ -z "$et" ]] 2>/dev/null && et=5
+			echo -e "${LIGHTCYAN}Enter destination subtitles format /Default ${ORANGE}$f${NC} : "
+			echo -e "${LIGHTCYAN}Support: .srt | .ass | .ssa | .sub | .mpl2.txt | .tmp | .vtt | .json | .ass.json | .txt ${NC}"
+			echo -e "${ORANGE}Leave blank to set default${NC}"
 			read -r f
-			[[ -z "$f" ]] && f="srt"
-			echo -e "Nhap mnrs /Default ${ORANGE}$mnrs${NC} : "
+			[[ -z "$f" ]] 2>/dev/null && f="srt"
+			echo -e "${LIGHTCYAN}Enter minimum region size /Default ${ORANGE}$mnrs${NC} : ${NC}"
+			echo -e "${ORANGE}Leave blank to set default${NC}"
 			read -r mnrs
-			[[ -z "$mnrs" ]] && mnrs="0.5"
-			echo -e "Nhap mxrs /Default ${ORANGE}$mxrs${NC} : "
+			[[ -z "$mnrs" ]] 2>/dev/null && mnrs=0.3
+			echo -e "${LIGHTCYAN}Enter maximum region size /Default ${ORANGE}$mxrs${NC} : ${NC}"
+			echo -e "${ORANGE}Leave blank to set default${NC}"
 			read -r mxrs
-			[[ -z "$mxrs" ]] && mxrs="4"
-			clear
-			echo -e "\n--------------------------------- " >> "$autosubcomp"
-			CASEautosub "$@"
+			[[ -z "$mxrs" ]] 2>/dev/null && mxrs=5
+			echo -e "${LIGHTCYAN}Enter maximum length of a tolerated silence /Default ${ORANGE}$mxcs${NC} : ${NC}"
+			echo -e "${ORANGE}Leave blank to set default${NC}"
+			read -r mxcs
+			[[ -z "$mxcs" ]] 2>/dev/null && mxcs=0.3
+			
+			control-autosub "$@"
 		;;
 		
 		0 )	# Break Menu
-			return
+			echo -e "\n${LIGHTCYAN}DONE ALL${NC}"
+			echo -e "${LIGHTCYAN}THANK YOU FOR USING${NC}"
 			clear
-			echo -e "${LIGHTBLUE}Da Out${NC}"
+			exit 0
 		;;
 			
 		* )	# Not Valid Choice
@@ -360,8 +379,6 @@ read -r -n 1 -s choice;
 			menuAutosub "$@"
 		;;
 		
-		
-			
 	esac
 }
 
@@ -375,19 +392,18 @@ echo -e "${ORANGE}|Autosub Translate Video|${NC}"
 echo -e "${ORANGE}+-----------------------+${NC}\n"
 
 # Python 3.8 Env for Autosub
-if [ -f "$HOME/autosub-env/env/bin/activate" ] ;then
+if ! if [ -f "$HOME/autosub-env/env/bin/activate" ] 2>/dev/null;then
 source "$HOME/autosub-env/env/bin/activate" 2>/dev/null
+fi ;then
+	echo -e "\n${RED}Fail to Env Python for Autosub${NC}"
+	echo -e "${RED}Please Install Python Env and Install Autosub${NC}\n"
+	exit 1
+	# Check yes/no and Autosub for each file in folder
+else
+	menuAutosub "$@"
 fi
 
-# Check yes/no and Autosub for each file in folder
-	if [ "$?" -eq "0" ] 2>/dev/null ;then
-		menuAutosub "$@"
-	else
-		echo -e "\n${RED}Fail to Env Python for Autosub${NC}"
-		echo -e "${RED}Please Install Python Env and Install Autosub${NC}\n"
-		exit 1
-	fi
-if [ -f "$HOME/autosub-env/env/bin/activate" ] ;then
+if [ -f "$HOME/autosub-env/env/bin/activate" ] 2>/dev/null;then
 deactivate
 fi
 
