@@ -44,12 +44,13 @@ NC=$'\e[0m' ## No Color
 # Function Basename
 filebasename() {
 	filename=$(basename "$file")
+	filepath=$(dirname "$file")
 	name=${filename%.*}
 return
 }
 
 # Function Show Config
-config() {
+function config {
 echo -e "${LIGHTCYAN}\n==============CONFIG==============${NC}"
 echo -e "${LIGHTCYAN}Speed Language:        ${YELLOW}$S${NC}     |${NC}"
 echo -e "${LIGHTCYAN}SRC Language:          ${YELLOW}$src${NC}        |${NC}"
@@ -63,7 +64,7 @@ echo -e "${LIGHTCYAN}===================================${NC}\n"
 }
 
 # function to ask user for y/n response
-ask_user(){
+ask_user() {
 local answer
 while true
   do
@@ -136,7 +137,7 @@ echo -e "${LIGHTBLUE}Starting Translate${NC} ${YELLOW}[$filename]${NC}\n"
 	--dst-language $d \
 	--format $f
 	sleep 0.3
-	! mv "$PWD/$name.$S.$d.$f" "$name.$f" 2>/dev/null && rm "$name.$S.$f" 2>/dev/null
+	! mv "$filepath/$name.$S.$d.$f" "$filepath/$name.$f" 2>/dev/null && rm "$filepath/$name.$S.$f" 2>/dev/null
 }
 
 
@@ -144,7 +145,36 @@ echo -e "${LIGHTBLUE}Starting Translate${NC} ${YELLOW}[$filename]${NC}\n"
 
 
 
+control-autosub () {
+	echo -e "${LIGHTCYAN}Skip using Audio Process?${NC}"
+	if ! ask_user ;then
+	continuous
+	else
+	echo -e "\n${LIGHTBLUE}Confirmed skipping using Audio Process${NC}"
+	noap="yes"
+	fi
+	# Autosub all video files in the directory running the script
+	if [ $# -eq 0 ] ;then
+		echo -e "\n${GREEN}AUTOSUB ALL VIDEO FILES IN FOLDERS${NC}\n"
+		find . -type f \( -name '*.mp4' -o -name '*.mkv' -o -name '*.avi' -o -name '*.wmv' -o -name '*.ts' -o -name '*.TS' -o -name '*.mov' -o -name '*.m4v' -o -name '*.flv' \) -exec echo '{}' \; > "$HOME/listfile.txt"
+		while IFS= read -r file; do
+			if [ -f "$file" ] ;then
+				filebasename "$file"
+				## Check file Completed
+				if [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] 2>/dev/null ;then 
+					echo "$filename" >> "$autosubdone" 
+					echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[File]${NC}\n"
+				else
+					config
+					if [ $noap == "yes" ] ;then autosub-without-ap "$file" ;else autosub-with-ap "$file" ;fi
+				fi
 
+
+			fi
+		done < "$HOME/listfile.txt"
+	fi
+
+}
 
 
 
