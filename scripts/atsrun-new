@@ -142,11 +142,18 @@ control-autosub () {
 clear
 echo -e "${LIGHTCYAN}Skip using Audio Process?${NC}"
 if ! ask_user ;then
-	continuous
+	continue
 else
 	echo -e "\n${LIGHTBLUE}Confirmed skipping using Audio Process${NC}"
-	noap="yes"
+	local noap="yes"
 fi
+echo -e "${LIGHTCYAN}You want to autosub the processed video files?${NC}"
+if ! ask_user ;then
+	continue
+else
+	local skipfile="yes"
+fi
+
 # Autosub all video files in the directory running the script
 if [ $# -eq 0 ] ;then
 	echo -e "\n${GREEN}AUTOSUB ALL VIDEO FILES IN FOLDERS${NC}\n"
@@ -155,7 +162,7 @@ if [ $# -eq 0 ] ;then
 		if [ -f "$file" ] 2>/dev/null;then
 			filebasename "$file"
 			## Check file Completed
-			if [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] 2>/dev/null ;then 
+			if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ "$skipfile" != "yes" ];} 2>/dev/null ;then 
 				echo "$filename" >> "$autosubdone" 
 				echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 			else
@@ -184,7 +191,7 @@ else
 		# Get filename and path
 		filebasename "$file"
 		## Check file Completed
-		if [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] 2>/dev/null ;then 
+		if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ "$skipfile" != "yes" ];} 2>/dev/null ;then 
 			echo "$filename" >> "$autosubdone" 
 			echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 		else
