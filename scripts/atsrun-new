@@ -28,7 +28,7 @@ mxcs=0.3
 et=2
 f="srt"
 d="vi"
-src="en"
+src="ja"
 tailnum=$(($# + 6))
 
 # Variable Color for text
@@ -66,7 +66,7 @@ ask_user() {
 local answer
 while true
   do
-    read -r answer
+    read -r -n 1 answer
     case $answer in [Yy]* ) return 0 ;;
                     [Nn]* ) return 1 ;;
                         * ) echo "Enter y or n";;
@@ -75,10 +75,10 @@ while true
 }
 
 # Function Cleanup
-cleanAutosub() {
+function cleanAutosub {
 	sudo find /tmp -type f -name "*.flac" -delete 2>/dev/null
 	sudo find /tmp -type f -name "*.wav" -delete 2>/dev/null
-return
+	return 0
 }
 
 # Run autosub with Audio Processing
@@ -87,7 +87,6 @@ autosub-with-ap () {
 	echo -e "\n${LIGHTBLUE}Autosub With Audio Processing (-ap)${NC}\n"
 	autosub \
 	--input "$file"  \
-	-sapi gcsv1 \
 	--speech-language $S \
 	--min-region-size $mnrs \
 	--max-region-size $mxrs \
@@ -97,8 +96,6 @@ autosub-with-ap () {
 	--drop-empty-regions \
 	--yes \
 	--audio-process y
-	sleep 0.3
-	cleanAutosub
 }
 
 # Run autosub without Audio Processing
@@ -107,7 +104,6 @@ autosub-without-ap () {
 	echo -e "\n${LIGHTBLUE}Autosub Without Audio Processing (-ap)${NC}\n"
 	autosub \
 	--input "$file"  \
-	-sapi gcsv1 \
 	--speech-language $S \
 	--min-region-size $mnrs \
 	--max-region-size $mxrs \
@@ -115,9 +111,7 @@ autosub-without-ap () {
 	--max-continuous-silence $mxcs \
 	--not-strict-min-length \
 	--drop-empty-regions \
-	--yes \
-	sleep 0.3
-	cleanAutosub
+	--yes
 }
 
 # Function Translate Subtitle
@@ -133,23 +127,28 @@ echo -e "${LIGHTBLUE}Starting Translate${NC} ${YELLOW}[$filename]${NC}\n"
 	--input "$filepath/$name.$S.$f" \
 	--src-language $src \
 	--dst-language $d \
-	--format $f
+	--format $f \
+	--yes
 	sleep 0.3
-	! mv "$filepath/$name.$S.$d.$f" "$filepath/$name.$f" 2>/dev/null && rm "$filepath/$name.$S.$f" 2>/dev/null
+	if ! mv "$filepath/$name.$S.$d.$f" "$filepath/$name.$f" 2>/dev/null ;then
+	echo -e "${RED}Rename Subtilte ERROR${NC}"
+	else
+	rm "$filepath/$name.$S.$f" 2>/dev/null
+	fi
 }
 
 control-autosub () {
 clear
 echo -e "${LIGHTCYAN}Skip using Audio Process?${NC}"
 if ! ask_user ;then
-	continue
+	:
 else
 	echo -e "\n${LIGHTBLUE}Confirmed skipping using Audio Process${NC}"
 	local noap="yes"
 fi
 echo -e "${LIGHTCYAN}You want to autosub the processed video files?${NC}"
 if ! ask_user ;then
-	continue
+	:
 else
 	local skipfile="yes"
 fi
@@ -158,11 +157,11 @@ fi
 if [ $# -eq 0 ] ;then
 	echo -e "\n${GREEN}AUTOSUB ALL VIDEO FILES IN FOLDERS${NC}\n"
 	find . -type f \( -name '*.mp4' -o -name '*.mkv' -o -name '*.avi' -o -name '*.wmv' -o -name '*.ts' -o -name '*.TS' -o -name '*.mov' -o -name '*.m4v' -o -name '*.flv' \) -exec echo '{}' \; > "$HOME/listfile.txt"
-	while IFS= read -r file ;do
+	while IFS= read file ;do
 		if [ -f "$file" ] 2>/dev/null;then
 			filebasename "$file"
 			## Check file Completed
-			if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ "$skipfile" != "yes" ];} 2>/dev/null ;then 
+			if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ -z "$skipfile" ];} 2>/dev/null ;then 
 				echo "$filename" >> "$autosubdone" 
 				echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 			else
@@ -191,7 +190,7 @@ else
 		# Get filename and path
 		filebasename "$file"
 		## Check file Completed
-		if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ "$skipfile" != "yes" ];} 2>/dev/null ;then 
+		if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ -z "$skipfile" ];} 2>/dev/null ;then 
 			echo "$filename" >> "$autosubdone" 
 			echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 		else
@@ -224,7 +223,7 @@ if [ -f "$autosubfail" ] 2>/dev/null ;then
 fi
 # File Da Autosub
 if [ -f "$autosubdone" ] 2>/dev/null ;then
-	echo -e "\n${YELLOW}[FAIL]${NC}\n"
+	echo -e "\n${YELLOW}[DONE]${NC}\n"
 	cat "$autosubdone" 2>/dev/null
 	rm "$autosubdone" 2>/dev/null
 fi
@@ -290,7 +289,7 @@ read -r -n 1 -s choice;
 				read -p -r 'Enter Video Language /src : ' src1
 				# Display list SRC Support
 				if [ -n "$(autosub -lsc | grep -i "$src1")" ] 2>/dev/null ;then
-					echo -e "${LIGHTBLUE}$(autosub -lsc | grep -i "$src1")${NC}\n"
+					autosub -lsc | grep -i "$src1"
 					read -p -r 'Enter the "SRC Language" parameter as above /Ex: en-us : ' src
 				else
 					echo -e "${RED}Language does not exist or does not support !${NC}"
@@ -299,7 +298,7 @@ read -r -n 1 -s choice;
 				read -p -r 'Enter Destination Language /d : ' d1
 				# Display list D Support
 				if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
-					echo -e "${LIGHTBLUE}$(autosub -ltc | grep -i "$d1")${NC}\n"
+					autosub -ltc | grep -i "$d1"
 					read -p -r 'Enter the "DST Language" parameter as above /Ex: en : ' d
 				else
 					echo -e "${RED}Language does not exist or does not support !${NC}"
@@ -323,25 +322,28 @@ read -r -n 1 -s choice;
 			
 		5 ) # Custom
 			clear
-			read -p -r 'Enter Video Language: ' S1
+			read -p 'Enter Video Language : ' S1
 			# Display S Support
-			if [ -n "$(autosub -lsc | grep -i "$S1")" ] 2>dev/null ;then
-				echo -e "${LIGHTCYAN}Enter Speech Language parameters As Above /Default ${ORANGE}$S${NC} : ${NC}"
+			if [ -n "$(autosub -lsc | grep -i "$S1")" ] 2>/dev/null ;then
+				autosub -lsc | grep -i "$S1"
+				echo -e "${LIGHTCYAN}Enter Speech Language parameters As Above /Default: ${ORANGE}$S${NC} : ${NC}"
 				echo -e "${ORANGE}Leave blank to set default${NC}"
 				read -r S
 				[[ -z "$S" ]] 2>/dev/null && S="ja-jp"
 			fi
-			read -p -r 'Enter translation source language SRC: ' src1
+			read -p 'Enter translation source language SRC: ' src1
 			# Display SRC Support
-			if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>dev/null ;then
+			if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>/dev/null ;then
+				autosub -ltc | grep -i "$src1"
 				echo -e "${LIGHTCYAN}Enter the "SRC Language" parameter as above /Default ${ORANGE}$src${NC}: ${NC}"
 				echo -e "${ORANGE}Leave blank to set default${NC}"
 				read -r src
 				[[ -z "$src" ]] 2>/dev/null && src="ja"
 			fi
-			read -p -r 'Enter translation destination language D: ' d1
+			read -p 'Enter translation destination language D: ' d1
 			# Display D Support
 			if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
+				autosub -ltc | grep -i "$d1"
 				echo -e "${LIGHTCYAN}Enter the "DST Language" parameter as above /Default ${ORANGE}$d${NC}: ${NC}"
 				echo -e "${ORANGE}Leave blank to set default${NC}"
 				read -r d
@@ -352,7 +354,7 @@ read -r -n 1 -s choice;
 			read -r et
 			[[ -z "$et" ]] 2>/dev/null && et=5
 			echo -e "${LIGHTCYAN}Enter destination subtitles format /Default ${ORANGE}$f${NC} : "
-			echo -e "${LIGHTCYAN}Support: .srt | .ass | .ssa | .sub | .mpl2.txt | .tmp | .vtt | .json | .ass.json | .txt ${NC}"
+			echo -e "${LIGHTCYAN}Support: srt | ass | ssa | sub | mpl2.txt | tmp | vtt | json | ass.json | txt ${NC}"
 			echo -e "${ORANGE}Leave blank to set default${NC}"
 			read -r f
 			[[ -z "$f" ]] 2>/dev/null && f="srt"
@@ -399,21 +401,21 @@ echo -e "${ORANGE}|Autosub Translate Video|${NC}"
 echo -e "${ORANGE}+-----------------------+${NC}\n"
 
 # Python 3.8 Env for Autosub
-if ! if [ -f "$HOME/autosub-env/env/bin/activate" ] 2>/dev/null;then
-source "$HOME/autosub-env/env/bin/activate" 2>/dev/null
-fi ;then
-	echo -e "\n${RED}Fail to Env Python for Autosub${NC}"
-	echo -e "${RED}Please Install Python Env and Install Autosub${NC}\n"
-	exit 1
-	# Check yes/no and Autosub for each file in folder
-else
+#if ! if [ -f "$HOME/autosub-env/env/bin/activate" ] 2>/dev/null;then
+#source "$HOME/autosub-env/env/bin/activate" 2>/dev/null
+#fi ;then
+#	echo -e "\n${RED}Fail to Env Python for Autosub${NC}"
+#	echo -e "${RED}Please Install Python Env and Install Autosub${NC}\n"
+#	exit 1
+#	# Check yes/no and Autosub for each file in folder
+#else
 	menuAutosub "$@"
-fi
+#fi
 
-if [ -f "$HOME/autosub-env/env/bin/activate" ] 2>/dev/null;then
-deactivate
-fi
+#if [ -f "$HOME/autosub-env/env/bin/activate" ] 2>/dev/null;then
+#deactivate
+#fi
 
 echo -e "\n${LIGHTCYAN}DONE ALL${NC}"
 echo -e "${LIGHTCYAN}THANK YOU FOR USING${NC}"
-cleanAutosub 2>/dev/null
+#cleanAutosub
