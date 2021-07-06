@@ -157,7 +157,8 @@ fi
 if [ $# -eq 0 ] ;then
 	echo -e "\n${GREEN}AUTOSUB ALL VIDEO FILES IN FOLDERS${NC}\n"
 	find . -type f \( -name '*.mp4' -o -name '*.mkv' -o -name '*.avi' -o -name '*.wmv' -o -name '*.ts' -o -name '*.TS' -o -name '*.mov' -o -name '*.m4v' -o -name '*.flv' \) -exec echo '{}' \; > "$HOME/listfile.txt"
-	while IFS= read file ;do
+
+	while IFS= read -r file ;do
 		if [ -f "$file" ] 2>/dev/null;then
 			filebasename "$file"
 			## Check file Completed
@@ -182,9 +183,9 @@ if [ $# -eq 0 ] ;then
 			fi
 		fi
 	done < "$HOME/listfile.txt"
-	rm -f "$HOME/listfile.txt"
+	rm -f "$HOME/listfile.txt" 
 else
-	echo -e "\n${GREEN}AUTOSUB CHO TUNG FILE DUOC CHON${NC}\n"
+	echo -e "\n${GREEN}AUTOSUB FOR EVERY SELECTED FILE${NC}\n"
 	config
 	for file in "$@" ;do
 		# Get filename and path
