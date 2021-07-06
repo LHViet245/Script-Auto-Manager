@@ -141,14 +141,14 @@ echo -e "${LIGHTBLUE}Starting Translate${NC} ${YELLOW}[$filename]${NC}\n"
 
 control-autosub () {
 clear
-echo -e "${LIGHTCYAN}Skip using Audio Process?${NC}"
+echo -e "${LIGHTCYAN}Skip using Audio Process? (y/n)${NC}"
 if ! ask_user ;then
 	:
 else
-	echo -e "\n${LIGHTBLUE}Confirmed skipping using Audio Process${NC}"
+	echo -e "\n${LIGHTBLUE}\nConfirmed skipping using Audio Process${NC}"
 	local noap="yes"
 fi
-echo -e "${LIGHTCYAN}You want to autosub the processed video files?${NC}"
+echo -e "${LIGHTCYAN}\nYou want to autosub the processed video files? (y/n)${NC}"
 if ! ask_user ;then
 	:
 else
