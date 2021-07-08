@@ -2,10 +2,10 @@
 ######################################################################################
 #############################################
 #
-# Script made by Starfall 
+# Script made by Starfall
 # Auto autosub By BingLingGroup .Soucre: "https://github.com/BingLingGroup/autosub"
 # Auto Translate
-# 
+#
 #
 ##############################################
 ######################################################################################
@@ -23,6 +23,7 @@ autosubdone="$HOME/check/AutosubDONE.txt"
 
 
 # Variable
+function constan {
 S="ja-jp"
 mnrs=0.3
 mxrs=5
@@ -31,7 +32,9 @@ et=2
 f="srt"
 d="vi"
 src="ja"
+}
 tailnum=$(($# + 6))
+constan
 
 # Variable Color for text
 LIGHTCYAN=$'\e[1;37m'
@@ -165,16 +168,20 @@ if [ $# -eq 0 ] || [ -d "$1" ];then
 		if [ -f "$file" ] 2>/dev/null;then
 			filebasename "$file"
 			## Check file Completed
-			if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ -z "$skipfile" ];} 2>/dev/null ;then 
-				echo "$filename" >> "$autosubdone" 
+			if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ -z "$skipfile" ];} 2>/dev/null ;then
+				echo "$filename" >> "$autosubdone"
 				echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 			else
 				config
-				! ( if [ $noap == "yes" ] 2>/dev/null;then
-					autosub-without-ap "$file"
-				else
-					! autosub-with-ap "$file" && autosub-without-ap "$file"
-				fi ) && echo -e "${RED}Autosub ${YELLOW}[$filename]${NC} fail ! Check again!${NC}" && echo "$filename" >> "$autosubfail"
+				if ! if [ $noap == "yes" ] 2>/dev/null;then
+						autosub-without-ap "$file"
+					else
+						! autosub-with-ap "$file" && autosub-without-ap "$file"
+					fi
+				then
+					echo -e "${RED}Autosub ${YELLOW}[$filename]${NC} fail ! Check again!${NC}"
+					echo "$filename" >> "$autosubfail"
+				fi
 				# Run Translate Function And check Autosub Comp or Fail
 				! ( if [ -f "$filepath/$name.$S.$f" ] 2>/dev/null;then
 					Translate
@@ -186,7 +193,7 @@ if [ $# -eq 0 ] || [ -d "$1" ];then
 			fi
 		fi
 	done #< "$HOME/listfile.txt"
-	#rm -f "$HOME/listfile.txt" 
+	#rm -f "$HOME/listfile.txt"
 else
 	echo -e "\n${GREEN}AUTOSUB FOR EVERY SELECTED FILE${NC}\n"
 	config
@@ -194,8 +201,8 @@ else
 		# Get filename and path
 		filebasename "$file"
 		## Check file Completed
-		if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ -z "$skipfile" ];} 2>/dev/null ;then 
-			echo "$filename" >> "$autosubdone" 
+		if { [ "$(grep -wF "$filename" "$autosubcomp")" == "$filename" ] && [ -z "$skipfile" ];} 2>/dev/null ;then
+			echo "$filename" >> "$autosubdone"
 			echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 		else
 			# Running Autosub
@@ -234,6 +241,62 @@ fi
 echo -e "\n-------------------" >> "$autosubcomp"
 }
 
+# Function Custom Autosub
+function custom-autosub {
+clear
+			read -p 'Enter Video Language : ' S1
+			# Display S Support
+			if [ -n "$(autosub -lsc | grep -i "$S1")" ] 2>/dev/null ;then
+				autosub -lsc | grep -i "$S1"
+				echo -e "${LIGHTCYAN}Enter Speech Language parameters As Above /Default: ${ORANGE}$S${NC} : ${NC}"
+				echo -e "${GREEN}Leave blank to set default${NC}"
+				read -r S
+				[[ -z "$S" ]] 2>/dev/null && S="ja-jp"
+			fi
+			read -p 'Enter translation source language SRC: ' src1
+			# Display SRC Support
+			if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>/dev/null ;then
+				autosub -ltc | grep -i "$src1"
+				echo -e "${LIGHTCYAN}Enter the "SRC Language" parameter as above /Default ${ORANGE}$src${NC}: ${NC}"
+				echo -e "${GREEN}Leave blank to set default${NC}"
+				read -r src
+				[[ -z "$src" ]] 2>/dev/null && src="ja"
+			fi
+			read -p 'Enter translation destination language D: ' d1
+			# Display D Support
+			if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
+				autosub -ltc | grep -i "$d1"
+				echo -e "${LIGHTCYAN}Enter the "DST Language" parameter as above /Default ${ORANGE}$d${NC}: ${NC}"
+				echo -e "${GREEN}Leave blank to set default${NC}"
+				read -r d
+				[[ -z "$d" ]] 2>/dev/null && d="vi"
+			fi
+			echo -e "${LIGHTCYAN}Enter energy threshold -et /Default ${ORANGE}$et${NC} : ${NC}"
+			echo -e "${GREEN}Leave blank to set default${NC}"
+			read -r et
+			[[ -z "$et" ]] 2>/dev/null && et=5
+			echo -e "${LIGHTCYAN}Enter destination subtitles format /Default ${ORANGE}$f${NC} : "
+			echo -e "${LIGHTCYAN}Support: srt | ass | ssa | sub | mpl2.txt | tmp | vtt | json | ass.json | txt ${NC}"
+			echo -e "${GREEN}Leave blank to set default${NC}"
+			read -r f
+			[[ -z "$f" ]] 2>/dev/null && f="srt"
+			echo -e "${LIGHTCYAN}Enter minimum region size /Default ${ORANGE}$mnrs${NC} : ${NC}"
+			echo -e "${GREEN}Leave blank to set default${NC}"
+			read -r mnrs
+			[[ -z "$mnrs" ]] 2>/dev/null && mnrs=0.3
+			echo -e "${LIGHTCYAN}Enter maximum region size /Default ${ORANGE}$mxrs${NC} : ${NC}"
+			echo -e "${GREEN}Leave blank to set default${NC}"
+			read -r mxrs
+			[[ -z "$mxrs" ]] 2>/dev/null && mxrs=5
+			echo -e "${LIGHTCYAN}Enter maximum length of a tolerated silence /Default ${ORANGE}$mxcs${NC} : ${NC}"
+			echo -e "${GREEN}Leave blank to set default${NC}"
+			read -r mxcs
+			[[ -z "$mxcs" ]] 2>/dev/null && mxcs=0.3
+}
+
+
+
+
 # Function List Menu
 menuAutosub() {
 cat << _EOF_
@@ -247,32 +310,32 @@ Press the number of your choice:
 	3 - Autosub English
 	4 - Translate Subtitle (Japanese Default)
 	5 - Custom Autosub
-	
+
 	0 - Exit
-	
+
 _EOF_
 
 # Wait for user to make a choice and run chosen functions:
 read -r -n 1 -s choice;
 
 	case $choice in
-	
+
 		1 )  # Autosub Japanese
 			control-autosub "$@"
 		;;
-			
+
 		2 )	# Autosub Chinese (Simplified, China)
 			S="cmn-hans-cn"
 			src="zh-cn"
 			control-autosub "$@"
 		;;
-			
+
 		3 )	# Autosub English
 			S="en-us"
 			src="en"
 			control-autosub "$@"
 		;;
-			
+
 		4 )	# Translate (Japanese)
 			echo -e "Config Language ?"
 			if ! ask_user ;then
@@ -298,7 +361,7 @@ read -r -n 1 -s choice;
 				else
 					echo -e "${RED}Language does not exist or does not support !${NC}"
 				fi
-				echo 
+				echo
 				read -p -r 'Enter Destination Language /d : ' d1
 				# Display list D Support
 				if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
@@ -323,75 +386,33 @@ read -r -n 1 -s choice;
 			fi
 			clear
 		;;
-			
+
 		5 ) # Custom
-			clear
-			read -p 'Enter Video Language : ' S1
-			# Display S Support
-			if [ -n "$(autosub -lsc | grep -i "$S1")" ] 2>/dev/null ;then
-				autosub -lsc | grep -i "$S1"
-				echo -e "${LIGHTCYAN}Enter Speech Language parameters As Above /Default: ${ORANGE}$S${NC} : ${NC}"
-				echo -e "${ORANGE}Leave blank to set default${NC}"
-				read -r S
-				[[ -z "$S" ]] 2>/dev/null && S="ja-jp"
-			fi
-			read -p 'Enter translation source language SRC: ' src1
-			# Display SRC Support
-			if [ -n "$(autosub -ltc | grep -i "$src1")" ] 2>/dev/null ;then
-				autosub -ltc | grep -i "$src1"
-				echo -e "${LIGHTCYAN}Enter the "SRC Language" parameter as above /Default ${ORANGE}$src${NC}: ${NC}"
-				echo -e "${ORANGE}Leave blank to set default${NC}"
-				read -r src
-				[[ -z "$src" ]] 2>/dev/null && src="ja"
-			fi
-			read -p 'Enter translation destination language D: ' d1
-			# Display D Support
-			if [ -n "$(autosub -ltc | grep -i "$d1")" ] 2>/dev/null ;then
-				autosub -ltc | grep -i "$d1"
-				echo -e "${LIGHTCYAN}Enter the "DST Language" parameter as above /Default ${ORANGE}$d${NC}: ${NC}"
-				echo -e "${ORANGE}Leave blank to set default${NC}"
-				read -r d
-				[[ -z "$d" ]] 2>/dev/null && d="vi"
-			fi
-			echo -e "${LIGHTCYAN}Enter energy threshold -et /Default ${ORANGE}$et${NC} : ${NC}"
-			echo -e "${ORANGE}Leave blank to set default${NC}"
-			read -r et
-			[[ -z "$et" ]] 2>/dev/null && et=5
-			echo -e "${LIGHTCYAN}Enter destination subtitles format /Default ${ORANGE}$f${NC} : "
-			echo -e "${LIGHTCYAN}Support: srt | ass | ssa | sub | mpl2.txt | tmp | vtt | json | ass.json | txt ${NC}"
-			echo -e "${ORANGE}Leave blank to set default${NC}"
-			read -r f
-			[[ -z "$f" ]] 2>/dev/null && f="srt"
-			echo -e "${LIGHTCYAN}Enter minimum region size /Default ${ORANGE}$mnrs${NC} : ${NC}"
-			echo -e "${ORANGE}Leave blank to set default${NC}"
-			read -r mnrs
-			[[ -z "$mnrs" ]] 2>/dev/null && mnrs=0.3
-			echo -e "${LIGHTCYAN}Enter maximum region size /Default ${ORANGE}$mxrs${NC} : ${NC}"
-			echo -e "${ORANGE}Leave blank to set default${NC}"
-			read -r mxrs
-			[[ -z "$mxrs" ]] 2>/dev/null && mxrs=5
-			echo -e "${LIGHTCYAN}Enter maximum length of a tolerated silence /Default ${ORANGE}$mxcs${NC} : ${NC}"
-			echo -e "${ORANGE}Leave blank to set default${NC}"
-			read -r mxcs
-			[[ -z "$mxcs" ]] 2>/dev/null && mxcs=0.3
-			
+			while true
+				do
+					constan
+					custom-autosub
+					config
+					echo -e "${LIGHTCYAN}Check and start autosub ! (y/n)${NC}"
+					! ask_user || continue 0
+			done
 			control-autosub "$@"
 		;;
-		
+
 		0 )	# Break Menu
 			echo -e "\n${LIGHTCYAN}DONE ALL${NC}"
 			echo -e "${LIGHTCYAN}THANK YOU FOR USING${NC}"
 			clear
 			exit 0
 		;;
-			
+
 		* )	# Not Valid Choice
 			clear
 			echo -e "\n${RED}Not a valid choice${NC}"
 			echo -e "${RED}Please choice some number${NC}\n"
 			menuAutosub "$@"
 		;;
-		
+
 	esac
 }
 
@@ -423,3 +444,10 @@ echo -e "${ORANGE}+-----------------------+${NC}\n"
 echo -e "\n${LIGHTCYAN}DONE ALL${NC}"
 echo -e "${LIGHTCYAN}THANK YOU FOR USING${NC}"
 #cleanAutosub
+
+
+
+
+
+
+
