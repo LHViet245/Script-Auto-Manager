@@ -191,7 +191,7 @@ cd /etc/atsinstall || { echo "cd to /etc/atsinstall Failure"; exit 1; }
 ln -sf /etc/atsinstall/scripts/.atsrun-new /usr/local/bin
 ln -sf /etc/atsinstall/scripts/.cptodrive /usr/local/bin
 ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
-chmod +x /usr/local/bin/.atsrun
+chmod +x /usr/local/bin/.atsrun-new
 chmod +x /usr/local/bin/.cptodrive
 
 echo "Installation complete"
