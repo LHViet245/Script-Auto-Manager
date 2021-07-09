@@ -188,7 +188,7 @@ cd
 rm -fr /etc/atsinstall
 git clone -q https://github.com/LHViet245/Script-Easy-Autosub /etc/atsinstall
 cd /etc/atsinstall || { echo "cd to /etc/atsinstall Failure"; exit 1; }
-ln -sf /etc/atsinstall/scripts/.atsrun /usr/local/bin
+ln -sf /etc/atsinstall/scripts/.atsrun-new /usr/local/bin
 ln -sf /etc/atsinstall/scripts/.cptodrive /usr/local/bin
 ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
 chmod +x /usr/local/bin/.atsrun
@@ -197,7 +197,7 @@ chmod +x /usr/local/bin/.cptodrive
 echo "Installation complete"
 echo
 echo "Run rclone config tho config your dirve"
-echo "You can now run .atsrun and .cptodrive"
+echo "You can now run .atsrun-new and .cptodrive"
 
 if [ "$rundir" != "/etc/atsinstall" ]; then
     rm -f "$rundir/autosubsetup"
