@@ -4,10 +4,10 @@ cptodriveCOMP="$HOME/check/cptodriveCOMP.txt"
 cptodriveFAIL="$HOME/check/cptodriveFAIL.txt"
 cptodriveDONE="$HOME/check/cptodriveDONE.txt"
 
-[ ! -d "$HOME/check" ] && mkdir $HOME/check
-[ ! -f "$HOME/check/cptodriveCOMP.txt" ] && touch $HOME/check/cptodriveCOMP.txt
-[ ! -f "$HOME/check/cptodriveFAIL.txt" ] && touch $HOME/check/cptodriveFAIL.txt
-[ ! -f "$HOME/check/cptodriveDONE.txt" ] && touch $HOME/check/cptodriveDONE.txt
+[ ! -d "$HOME/check" ] && mkdir "$HOME/check"
+[ ! -f "$HOME/check/cptodriveCOMP.txt" ] && touch "$HOME/check/cptodriveCOMP.txt"
+[ ! -f "$HOME/check/cptodriveFAIL.txt" ] && touch "$HOME/check/cptodriveFAIL.txt"
+[ ! -f "$HOME/check/cptodriveDONE.txt" ] && touch "$HOME/check/cptodriveDONE.txt"
 
 #dcz="256M"
 #tf="16"
@@ -48,7 +48,6 @@ if [ -f "$cptodriveDONE" ] 2>/dev/null ;then
 	fi
 	rm "$cptodriveDONE" 2>/dev/null
 fi
-return
 }
  
 #Function Filename
@@ -114,7 +113,7 @@ else
 	done
 fi
 # List File Done or Completed or FAIL
-checkfile
+checkfile "$@"
 return
 }
 
