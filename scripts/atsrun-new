@@ -3,7 +3,7 @@
 #############################################
 #
 # Script made by Starfall
-# Auto autosub By BingLingGroup .Soucre: "https://github.com/BingLingGroup/autosub"
+# Auto Subtitle Video By BingLingGroup .Soucre: "https://github.com/BingLingGroup/autosub"
 # Auto Translate
 #
 #
@@ -206,11 +206,15 @@ else
 			echo -e "\n${YELLOW}This video file has been Autosub${NC} ${GREEN}[$filename]${NC}\n"
 		else
 			# Running Autosub
-			! ( if [ $noap == "yes" ] 2>/dev/null;then
-				autosub-without-ap "$file"
-			else
-				! autosub-with-ap "$file" && autosub-without-ap "$file"
-			fi ) && echo -e "${RED}Autosub ${YELLOW}[$filename]${NC} fail ! Check again!${NC}" && echo "$filename" >> "$autosubfail"
+			if !  if [ $noap == "yes" ] 2>/dev/null;then
+					autosub-without-ap "$file"
+				else
+					! autosub-with-ap "$file" && autosub-without-ap "$file"
+				fi
+			then 
+				echo -e "${RED}Autosub ${YELLOW}[$filename]${NC} fail ! Check again!${NC}"
+				echo "$filename" >> "$autosubfail"
+			fi
 			# Run Translate Function And check Autosub Comp or Fail
 			! ( if [ -f "$filepath/$name.$S.$f" ] 2>/dev/null;then
 				Translate
@@ -222,6 +226,8 @@ else
 		fi
 	done
 fi
+
+
 
 # File Da Hoan Thanh
 echo -e "\n${GREEN}[COMPLETED]${NC}\n"
