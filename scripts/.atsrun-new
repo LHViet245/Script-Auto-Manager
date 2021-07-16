@@ -16,9 +16,6 @@ autosubcomp="$HOME/check/AutosubCOMP.txt"
 autosubfail="$HOME/check/AutosubFAIL.txt"
 autosubdone="$HOME/check/AutosubDONE.txt"
 [ ! -d "$HOME/check" ] && mkdir "$HOME/check"
-[ ! -f "$autosubcomp" ] && touch "$HOME/check/AutosubCOMP.txt"
-[ ! -f "$autosubfail" ] && touch "$HOME/check/AutosubFAIL.txt"
-[ ! -f "$autosubdone" ] && touch "$HOME/check/AutosubDONE.txt"
 
 
 
@@ -179,6 +176,8 @@ if [ $# -eq 0 ] || [ -d "$1" ];then
 						! autosub-with-ap "$file" && autosub-without-ap "$file"
 					fi
 				then
+				:
+				else
 					echo -e "${RED}Autosub ${YELLOW}[$filename]${NC} fail ! Check again!${NC}"
 					echo "$filename" >> "$autosubfail"
 				fi
@@ -212,6 +211,8 @@ else
 					! autosub-with-ap "$file" && autosub-without-ap "$file"
 				fi
 			then 
+			:
+			else
 				echo -e "${RED}Autosub ${YELLOW}[$filename]${NC} fail ! Check again!${NC}"
 				echo "$filename" >> "$autosubfail"
 			fi
