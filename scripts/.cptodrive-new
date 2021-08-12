@@ -1,0 +1,308 @@
+#! /bin/bash
+
+#############################################################################################
+######################################## CONFIG #############################################
+root_folder=
+drive_name=
+script_name="$(basename "$0")"
+tailnum=$(($# + 6))
+get_function="../feature/get-function"
+source_script="$HOME/.$script_name"
+cptodriveCOMP="$source_script"/"$script_name"_COMP.txt
+cptodriveFAIL="$source_script"/"$script_name"_FAIL.txt
+cptodriveDONE="$source_script"/"$script_name"_DONE.txt
+
+[[ ! -d "$source_script" ]] && mkdir "$source_script"
+
+source "$get_function" color
+
+#############################################################################################
+####################################### FUNCTION ############################################
+
+# Function get Filename
+function filename() {
+	filename=$(basename "$file")
+    #extension=${filename##*.}
+    #name=${filename%.*}
+return
+}
+
+#Function Rclone
+function copytodrive() {
+echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote ${Yellow}[$drive_name]${NC}\n"
+# Check file is Dicrectory or file
+if [[ -d "$file" ]] 2>/dev/null ;then
+	echo -e "${Lightblue}[$filename]${NC} ${Lightblue}is a directory${NC}"
+	root_folder="$root_folder/$filename"
+fi
+# Run Rclone
+if ! rclone copy -vP "$file" "$drive_name:$root_folder" --fast-list --create-empty-src-dirs --ignore-existing ;then
+	echo "$filename" >> "$cptodriveFAIL"
+else
+	echo "$filename" >> "$cptodriveCOMP"
+fi
+}
+
+function copytodriveAUTO() {
+if [[ $# -eq 0 ]] ;then
+	for file in * ;do
+		filename "$file"
+		if [[ -e "$file" ]] 2>/dev/null;then
+			#text=$(grep -wF "$filename" "$cptodriveCOMP")
+			if [[ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ]] 2>/dev/null ;then
+				echo "$filename" >> "$cptodriveDONE"
+			else
+				echo -e "\n${Lightblue}Confirm${NC} ${Yellow}[$filename]${NC} ${Lightblue}has not been copied to Remote${NC} ${Yellow}[$drive_name]]${NC}"
+				copytodrive "$file"
+			fi
+		fi
+	done
+else
+	for file in "$@" ;do
+		filename "$file"
+		if [ -e "$file" ] ;then
+			#text="$(grep -wF "$filename" "$cptodriveCOMP")"
+			if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+				#echo -e "${Yellow}[$filename]${NC} ${Green}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
+				echo "$filename" >> "$cptodriveDONE"
+			else
+				echo -e "${Lightblue}Confirm${NC} ${Yellow}[$filename]${NC} ${Lightblue}has not been copied to Remote${NC} ${Yellow}[$drive_name]${NC}\n"
+				copytodrive "$file"
+			fi
+		else 
+			echo -e "\n${Red}Does not exist${NC} ${Yellow}[$filename]${NC}"
+			echo -e "${Red}Please Check Again${NC}\n"
+			echo "$filename does not exist" >> "$cptodriveFAIL"
+		fi
+	done
+fi
+# List File Done or Completed or FAIL
+checkfile "$@"
+}
+
+function config_drive_name_remote() {
+local num=1
+local choice
+local remote
+while IFS= read -r remote ;do
+    local remote[$num]="$remote"
+    if [[ $num -lt 10 ]]; then
+			echo -e "               $num. ${remote[$num]}"
+	else
+			echo -e "              $num. ${remote[$num]}"
+	fi
+    ((num++))
+done < <(rclone listremotes | awk -F: '{print $1}')
+echo -e "Select the remote you want to use: "
+read -r choice
+if [[ $choice -lt $num ]] && [[ $choice -ge 1 ]] && [[ "$choice" =~ ^[0-9]+$ ]] ;then
+    num=$choice
+    drive_name="${remote[$num]}"
+    echo -e "[$drive_name] selected successfully\n"
+else
+    clear
+    echo -e "Invalid choice"
+    echo -e "Sorry! integers only or wrong number\nTRY AGAIN!!\n"
+    config_drive_name_remote
+fi
+}
+
+function config_root_folder() {
+local foldersub
+local foldersub_new
+local num
+local previous_directory
+local skip_loop="no"
+while true; do
+	if [[ "$skip_loop" != "yes" ]] ;then
+		num=1
+		while IFS= read -r foldersub; do
+			foldersub[$num]="$foldersub"
+			if [[ $num -lt 10 ]]; then
+				echo -e "               $num. ${foldersub[$num]}"
+			else
+				echo -e "              $num. ${foldersub[$num]}"
+			fi
+			((num++))
+		done < <(rclone lsd "$drive_name:$root_folder" | awk -F '-1 ' '{print $NF}')
+	fi
+	if [[ "$num" -lt 2 ]] && [[ -z "$foldersub" ]] || [[ "$skip_loop" == "yes" ]];then echo "No folder found in '$drive_name:$root_folder'" ;fi 
+	
+	echo -e "\nCURRENT DICRECROTY:  '$drive_name:$root_folder'"
+	echo -e 'Select Folder or type new folder in here. You can use command behind'
+	#echo -e "--showfile | --drive-name"
+	echo -e "Type 2 dot '..' to go previous folder | Enter blank to finish."
+	read -r foldersub_new
+	[[ -z "$foldersub_new" ]] && echo -e "SUCCESS get root folder '$drive_name:$root_folder'" && return 0
+	if { [[ "$foldersub_new" -lt $num ]] && [[ "$foldersub_new" -ge 1 ]] && [[ "$foldersub_new" =~ ^[0-9]+$ ]];} 2>/dev/null; then
+		num=$foldersub_new
+		previous_directory="$root_folder"
+		root_folder="$root_folder/${foldersub[$num]}"
+clear
+		echo -e "[${foldersub[$num]}] selected successfully\n"
+	elif [[ "$foldersub_new" == ".." ]] ;then
+clear
+		echo -e "Go Back\n" 
+		root_folder="$previous_directory"
+		previous_directory="$(echo "$root_folder" | sed -e's,^\(.*\/\).*,\1,g' | sed 's/.$//')"
+		if ! rclone lsd "$drive_name:$root_folder" > /dev/null 2>&1 ;then
+			skip_loop="yes"
+		else
+			skip_loop="no"
+		fi
+	else
+		if [[ "$skip_loop" != "yes" ]];then
+			for (( i=1; i < $num; i++ )) ;do
+				if [[ "$foldersub_new" == "${foldersub[$i]}" ]] ;then
+clear
+					echo -e "Directory already exists. Will access this folder\n"
+					root_folder="$root_folder/$foldersub_new"
+					config_root_folder
+					return
+				fi
+			done
+		fi
+clear
+			previous_directory="$root_folder" 
+			root_folder="$root_folder/$foldersub_new"
+			echo -e "Success create new folder '$foldersub_new'\n"
+			skip_loop="yes"
+	fi
+done
+}
+
+
+
+function menuRclone() {
+	echo 'day la "$@"'
+cat << _EOF_
+
+Main Menu: What would you like to do?
+
+Press the number of your choice:
+
+	1 - Default copy to root folder ' $drive_name:$root_folder '
+	2 - Create more folders in the root folder ' $drive_name:$root_folder/FOLDER_HERE/ '
+	3 - Copy files by extension .EG: srt | mp4 | mp3 | txt ...
+	
+	0 - Exit
+	
+_EOF_
+
+local choice
+# Wait for user to make a choice and run chosen functions:	
+read -r -n 1 -s choice;
+
+	case $choice in 
+		
+		1 )	# Copy File Sang Drive Mac Dinh /syncc/
+			clear
+			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			copytodriveAUTO "$@"
+		
+		;;
+		
+		2 )  # Tao Thu Muc Dich Den /syncc/FOLDER_HERE/
+			clear
+			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			echo -e "${Lightcyan}Name of the folder you want to create: ${NC}"
+			read -r folder
+			{ [[ -n "$folder" ]] 2>/dev/null && root_folder="$root_folder/$folder"; } || echo -e "${Lightblue}Confirm that you have created an additional folder${NC} ${Yellow}[$drive_name:$root_folder]${NC}"
+			copytodriveAUTO "$@"
+	
+		;;
+		
+		3 )	# Chi Copy File Subtitle .srt
+			clear
+			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			echo -e "Enter the name of the extension file you want to copy to the remote drive "
+			echo -e "Enter only the filename extension, no dot ' . '"
+			echo -e "Extended file names must be separated by commas ' , ' contiguous."
+			echo -e "Eg: srt,mp4,mp3,txt"
+			read -r file_extension
+			file_extension="$(echo "$file_extension" | sed 's/ //g')"
+			[[ "$(echo "$file_extension" | grep -c ",")" -eq 0  ]] && file_extension="$file_extension,"
+			for arg in "$@" ;do
+				dir_arg="$(readlink -f "$arg")"
+				[[ -d "$dir_arg" ]] && cd "$dir_arg" && skip_loop="no" || skip_loop="yes"
+				if [[ "$skip_loop" != "yes" ]] ;then
+					if [[ "$SHELL" == "$(which zsh)" ]] 2>/dev/null;then
+						getopt -s nullglob
+					else
+						shopt -s nullglob
+					fi
+					for file in .*{$file_extension} ;do
+						filename "$file"
+						if [ -f "$file" ] 2>/dev/null ;then
+							#text="$(grep -wF "$filename" "$cptodriveCOMP")"
+							if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+								# echo -e "${Yellow}[$filename]${NC} ${Green}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
+								echo "$filename" >> "$cptodriveDONE"
+							else
+								copytodrive "$file"
+							fi
+						else 
+							echo -e "${Red}File does not exist${NC} ${Yellow}[$filename]${NC}"
+							echo -e "${Red}Please Check Again${NC}"
+							echo "$filename does not exist" >> "$cptodriveFAIL"
+						fi
+					done
+				fi
+			done
+				## List file Completed or Fail or Done
+			checkfile
+		
+		;;
+
+		0 ) #Exit
+			clear
+			echo -e "${Lightblue}Exited${NC}"
+			return
+		;;
+		
+		* ) # Not Valid Choice
+			clear
+			echo -e "\n${Red}Not a valid choice${NC}"
+			echo -e "${Red}Please choice some number${NC}\n"
+			menuRclone "$@"
+		;;
+		
+	esac
+
+}
+
+function checkfile() {
+	## List File Completed
+if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
+	echo -e "${Green}[COMPLETED]${NC}"
+	tail -n $tailnum "$cptodriveCOMP" 2>/dev/null
+fi
+	## List File Fail
+if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
+	echo -e "${Red}[FAIL]${NC}"
+	cat "$cptodriveFAIL" 2>/dev/null
+	rm "$cptodriveFAIL" 2>/dev/null
+fi
+	## List File Done
+if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
+	echo -e "${Yellow}[Done]${NC}"
+	if [ $# -gt 20 ] 2>/dev/null ;then
+		tail -n 10 "$cptodriveDONE" 2>/dev/null
+	else
+		cat "$cptodriveDONE" 2>/dev/null
+		rm "$cptodriveDONE" 2>/dev/null
+	fi
+fi
+}
+
+function show_config() {
+
+	echo "haha"
+}
+
+
+################ RUNNING SCRIPT #######################
+config_drive_name_remote
+config_root_folder
+clear
+menuRclone "$@"
