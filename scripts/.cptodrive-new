@@ -6,20 +6,34 @@ root_folder=
 drive_name=
 script_name="$(basename "$0")"
 tailnum=$(($# + 6))
-get_function="../feature/get-function"
-source_script="$HOME/.$script_name"
+get_function="/home/starfall/github-project/Script-Auto-Manager/feature/get-function"
+source_script="$HOME/.auto-manager-server/$(echo "$script_name" | tr -d '.')"
 cptodriveCOMP="$source_script"/"$script_name"_COMP.txt
 cptodriveFAIL="$source_script"/"$script_name"_FAIL.txt
 cptodriveDONE="$source_script"/"$script_name"_DONE.txt
+config_file="$source_script/config"
 
-[[ ! -d "$source_script" ]] && mkdir "$source_script"
+[[ ! -d "$source_script" ]] && mkdir -p "$source_script"
+[[ ! -d "$config_file" ]] && mkdir -p "$config_file"
 
-source "$get_function" color
+source "$get_function" "color"
 
 #############################################################################################
 ####################################### FUNCTION ############################################
 
 # Function get Filename
+function ask_user() {
+local answer
+while true
+  do
+    read -r -n 1 answer
+    case $answer in [Yy]* ) return 0 ;;
+                    [Nn]* ) return 1 ;;
+                        * ) echo "Enter y or n";;
+    esac
+  done
+}
+
 function filename() {
 	filename=$(basename "$file")
     #extension=${filename##*.}
@@ -84,6 +98,8 @@ function config_drive_name_remote() {
 local num=1
 local choice
 local remote
+
+echo -e "\nList remote:"
 while IFS= read -r remote ;do
     local remote[$num]="$remote"
     if [[ $num -lt 10 ]]; then
@@ -171,19 +187,157 @@ clear
 done
 }
 
+function checkfile() {
+	## List File Completed
+if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
+	echo -e "${Green}[COMPLETED]${NC}"
+	tail -n $tailnum "$cptodriveCOMP" 2>/dev/null
+fi
+	## List File Fail
+if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
+	echo -e "${Red}[FAIL]${NC}"
+	cat "$cptodriveFAIL" 2>/dev/null
+	rm "$cptodriveFAIL" 2>/dev/null
+fi
+	## List File Done
+if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
+	echo -e "${Yellow}[Done]${NC}"
+	if [ $# -gt 20 ] 2>/dev/null ;then
+		tail -n 10 "$cptodriveDONE" 2>/dev/null
+	else
+		cat "$cptodriveDONE" 2>/dev/null
+		rm "$cptodriveDONE" 2>/dev/null
+	fi
+fi
+}
+
+function process_config() {
+case "$1" in
+	create_and_show ) # Create and show config
+			config_name="$drive_name"_"$root_folder"_"$(date '+%d-%m-%Y')".config
+			echo -e "By default, the config file will be saved in '$config_file'"
+			echo -e "Enter the name you want to give the config file. No need '.config' | Default name: '$config_name'"
+			echo -e "If the config file has the same name as the existing file, it will be overwritten."
+			read -r config_name
+			[[ $(echo "$config_name" | awk -F '.' '{print $NF}') != "config" ]] && config_name="$config_name.config"
+			dir_filecfg="$config_file/$config_name"
+echo -e "======== SCRIPT MADE BY STARFALL ========
+Script name : $(echo "$script_name" | tr -d '.')
+Version : $version
+Created : $(date '+%d-%m-%Y')
+Drive Name : $drive_name
+Root Folder : $root_folder
+=========================================
+Default run : NO" > "$dir_filecfg"
+			echo -e "Do you want to leave the default config file for the next run? (y/n)"
+			ask_user && sed -i '/^\(\s\|#\)*Default run/ c\Default run : YES' "$dir_filecfg"
+			head -n 7 "$dir_filecfg"
+	;;
+
+	show ) # Only show config
+			head -n 7 "$dir_filecfg"
+	;;
+
+	read_config ) # Read config file
+			local line
+			local var_name
+			local value_name
+			while IFS= read -r line; do
+				var_name="$(echo "$line" | awk -F: '{print $1}' | sed 's/ //g')"
+				value_name="$(echo "$line" | awk -F: '{print $2}' | sed 's/ //g')"
+				if [[ "$var_name" == "Version" ]]; then
+					if ! testvercomp "$version" "$value_name" ">" && [[ "$version" != "$value_name" ]] 2>/dev/null ; then
+						echo -e "The version that created the config file seems to be out of date. You need to create new config by new version"
+						echo -e "Script version: $version | Config version: $value_name"
+						exit 115
+					else
+						config_version="$value_name"
+					fi
+				fi
+
+				if [[ "$var_name" == "Created" ]] ;then
+					config_created_date="$value_name"
+				fi
+				
+				if [[ "$var_name" == "DriveName" ]]; then
+					drive_name="$value_name"
+				elif [[ "$var_name" == "RootFolder" ]]; then
+					root_folder="$value_name"
+				fi
+			done <"$dir_filecfg"	
+	;;	
+	   * ) # Error to run fucntion
+	   		echo -e "ERROR to process config"
+			exit 114
+	;;
+esac
+}
+
+vercomp () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+testvercomp () {
+    vercomp $1 $2
+    case $? in
+        0) op='=';;
+        1) op='>';;
+        2) op='<';;
+    esac
+    if [[ $op != $3 ]]
+    then
+        #echo "FAIL: Expected '$3', Actual '$op', Arg1 '$1', Arg2 '$2'"
+		return 1
+    else
+        #echo "Pass: '$1 $op $2'"
+		return 0
+    fi
+}
+
+function version() {
+	version="2.0.1"
+}
 
 
 function menuRclone() {
-	echo 'day la "$@"'
+echo -e "Loaded: $(basename "$dir_filecfg")\tCreated: $config_created_date\tConfig version: $config_version\tDefault:$(grep '^Default run' "$dir_filecfg" | awk -F: '{print $NF}')"
 cat << _EOF_
 
 Main Menu: What would you like to do?
 
 Press the number of your choice:
 
-	1 - Default copy to root folder ' $drive_name:$root_folder '
-	2 - Create more folders in the root folder ' $drive_name:$root_folder/FOLDER_HERE/ '
+	1 - Default copy to root folder - $drive_name:$root_folder
+	2 - Create more folders in the root folder - $drive_name:$root_folder/FOLDER_HERE/
 	3 - Copy files by extension .EG: srt | mp4 | mp3 | txt ...
+	4 - Version
 	
 	0 - Exit
 	
@@ -254,6 +408,10 @@ read -r -n 1 -s choice;
 		
 		;;
 
+		4 ) # Version
+			echo "Version: $version"
+		;;
+
 		0 ) #Exit
 			clear
 			echo -e "${Lightblue}Exited${NC}"
@@ -271,38 +429,68 @@ read -r -n 1 -s choice;
 
 }
 
-function checkfile() {
-	## List File Completed
-if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
-	echo -e "${Green}[COMPLETED]${NC}"
-	tail -n $tailnum "$cptodriveCOMP" 2>/dev/null
-fi
-	## List File Fail
-if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
-	echo -e "${Red}[FAIL]${NC}"
-	cat "$cptodriveFAIL" 2>/dev/null
-	rm "$cptodriveFAIL" 2>/dev/null
-fi
-	## List File Done
-if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
-	echo -e "${Yellow}[Done]${NC}"
-	if [ $# -gt 20 ] 2>/dev/null ;then
-		tail -n 10 "$cptodriveDONE" 2>/dev/null
-	else
-		cat "$cptodriveDONE" 2>/dev/null
-		rm "$cptodriveDONE" 2>/dev/null
-	fi
-fi
-}
 
-function show_config() {
-
-	echo "haha"
-}
 
 
 ################ RUNNING SCRIPT #######################
-config_drive_name_remote
-config_root_folder
 clear
+#Info
+version
+echo -e "\n${Orange}+----------------------+${NC}"
+echo -e "${Orange}| Rclone Copy To Drive |${NC}    SCRIPT VERSION: $version"
+echo -e "${Orange}+----------------------+${NC}\n"
+while IFS= read -r filecfg_check ;do
+	while read -r line1 ;do
+		var_name="$(echo "$line1" | awk -F: '{print $1}' | sed 's/ //g')"
+		value_name="$(echo "$line1" | awk -F: '{print $2}' | sed 's/ //g')"
+		if [[ "$var_name" == "Defaultrun" ]] && [[ "$value_name" == "YES" ]] ;then
+			skip_config="yes"
+			dir_filecfg="$filecfg_check"
+			process_config "read_config"
+		else
+			skip_config="no"
+		fi
+	done < "$filecfg_check" 2>/dev/null
+done< <(find "$config_file" -type f -name "*.config") 2>/dev/null
+
+if [[ "$skip_config" != "yes" ]] ;then
+	num_file=1
+	while IFS= read -r filecfg ;do
+		echo -e "List Config:\n"
+		if [[ -f "$filecfg" ]] ;then
+			config_name[$num_file]="$(basename "$filecfg")"
+			if [[ $num_file -lt 10 ]]; then
+					echo -e "\t\t $num_file. ${config_name[$num_file]}"
+			else
+					echo -e "\t\t$num_file. ${config_name[$num_file]}"
+			fi
+		fi
+		((num_file++))
+	done< <(find "$config_file" -type f -name "*.config") 2>/dev/null
+
+	echo -e "\nFound $(($num_file - 1)) config files\n"
+	if [[ $(($num_file - 1)) -eq 0 ]] ;then
+		echo -e "No config found\n"
+		echo -e "Will configure the drive now."
+		config_drive_name_remote
+		sleep 0.5
+		config_root_folder
+		process_config "create_and_show"
+	else
+		echo -e "Select the config file you want to use."
+		echo -e "Type 'show [number or config file name]' to see config file information. Eg. 'show 1' or 'show drivename.config'"
+		echo -e "Type 'config' to create a new config file. By default, the config file will be saved in '$config_file'"
+		echo -e "Enter blank will automatically load the first config file."
+		read -r new_config
+		if { [[ "$new_config" -lt $num_file ]] && [[ "$new_config" -ge 1 ]] && [[ "$new_config" =~ ^[0-9]+$ ]];} 2>/dev/null; then
+			num_file=$new_config
+			dir_filecfg="$config_file/${config_name[$num_file]}"
+			echo -e "Do you want to leave the default config file for the next run? (y/n)"
+			ask_user 2>/dev/null && sed -i '/^\(\s\|#\)*Default run/ c\Default run : YES' "$dir_filecfg"
+			process_config "read_config"
+		fi
+	fi
+fi
+
+# Run menu
 menuRclone "$@"
