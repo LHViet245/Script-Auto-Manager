@@ -454,7 +454,7 @@ read -r -n 1 -s choice;
 			for arg in "$@" ;do
 				dir_arg="$(readlink -f "$arg")"
 				if [[ -d "$dir_arg" ]] ;then
-					cd "$dir_arg" || echo -e "${Red}Directory not found${NC}" && exit 1
+					! cd "$dir_arg" && echo -e "${Red}Directory not found${NC}" && exit 1
 					skip_loop="no"
 				else
 					skip_loop="yes"
