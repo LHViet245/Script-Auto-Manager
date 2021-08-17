@@ -195,7 +195,7 @@ function checkfile() {
 local list
 	## List File Completed
 if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
-	echo -e "${BGreen}[COMPLETED]${NC}"
+	echo -e "\n${BGreen}[COMPLETED]${NC}"
 	while IFS= read -r list ;do
 		if [[ "$list" != "---------------------------" ]] ;then
 			echo -e "${White}"$list"${NC}\t${BGreen}COMPLETED${NC}"
@@ -206,7 +206,7 @@ if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
 fi
 	## List File Done
 if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
-	echo -e "${BYellow}[Done]${NC}"
+	echo -e "\n${BYellow}[Done]${NC}"
 	if [ $# -gt 20 ] 2>/dev/null ;then
 		echo -e "${Purple}MORE...${NC}"
 		while IFS= read -r list ;do
@@ -229,7 +229,7 @@ if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
 fi
 	## List File Fail
 if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
-	echo -e "${BRed}[FAIL]${NC}"
+	echo -e "\n${BRed}[FAIL]${NC}"
 	while IFS= read -r list ;do
 		if [[ "$list" != "---------------------------" ]] ;then
 			echo -e "${White}"$list"${NC}\t${BRed}FAIL${NC}"
@@ -453,7 +453,12 @@ read -r -n 1 -s choice;
 			[[ "$(echo "$file_extension" | grep -c ",")" -eq 0  ]] && file_extension="$file_extension,"
 			for arg in "$@" ;do
 				dir_arg="$(readlink -f "$arg")"
-				[[ -d "$dir_arg" ]] && cd "$dir_arg" && skip_loop="no" || skip_loop="yes"
+				if [[ -d "$dir_arg" ]] ;then
+					cd "$dir_arg" || echo -e "${Red}Directory not found${NC}" && exit 1
+					skip_loop="no"
+				else
+					skip_loop="yes"
+				fi
 				if [[ "$skip_loop" != "yes" ]] ;then
 					if [[ "$SHELL" == "$(which zsh)" ]] 2>/dev/null;then
 						getopt -s nullglob
