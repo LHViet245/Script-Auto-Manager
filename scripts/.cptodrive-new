@@ -190,28 +190,51 @@ done
 }
 
 function checkfile() {
+local list
 	## List File Completed
 if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
-	echo -e "${Green}[COMPLETED]${NC}"
-	tail -n $(($# + 4)) "$cptodriveCOMP" 2>/dev/null
+	echo -e "${BGreen}[COMPLETED]${NC}"
+	while IFS= read -r list ;do
+		if [[ "$list" != "---------------------------" ]] ;then
+			echo -e "${White}"$list"${NC}\t${BGreen}COMPLETED${NC}"
+		else
+			echo -e "$list"
+		fi
+	done < <(tail -n $(($# + 4)) "$cptodriveCOMP" 2>/dev/null) 
 fi
-
 	## List File Done
 if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
-	echo -e "${Yellow}[Done]${NC}"
+	echo -e "${BYellow}[Done]${NC}"
 	if [ $# -gt 20 ] 2>/dev/null ;then
-		echo -e "MORE..."
-		tail -n 10 "$cptodriveDONE" 2>/dev/null
+		echo -e "${Purple}MORE...${NC}"
+		while IFS= read -r list ;do
+			if [[ "$list" != "---------------------------" ]] ;then
+				echo -e "${White}"$list"${NC}\t${BYellow}DONE${NC}"
+			else
+				echo -e "$list"
+			fi
+		done < <(tail -n 10 "$cptodriveDONE" 2>/dev/null)	
 	else
-		tail -n $(($# + 4)) "$cptodriveDONE" 2>/dev/null
-		rm "$cptodriveDONE" 2>/dev/null
+		while IFS= read -r list ;do
+			if [[ "$list" != "---------------------------" ]] ;then
+				echo -e "${White}"$list"${NC}\t${BYellow}DONE${NC}"
+			else
+				echo -e "$list"
+			fi
+		done < <(tail -n $(($# + 4)) "$cptodriveDONE" 2>/dev/null)
 	fi
+	rm "$cptodriveDONE" 2>/dev/null
 fi
-
 	## List File Fail
 if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
-	echo -e "${Red}[FAIL]${NC}"
-	tail -n $(($# + 4)) "$cptodriveFAIL" 2>/dev/null
+	echo -e "${BRed}[FAIL]${NC}"
+	while IFS= read -r list ;do
+		if [[ "$list" != "---------------------------" ]] ;then
+			echo -e "${White}"$list"${NC}\t${BRed}FAIL${NC}"
+		else
+			echo -e "$list"
+		fi
+	done < <(tail -n $(($# + 4)) "$cptodriveFAIL" 2>/dev/null)
 	rm "$cptodriveFAIL" 2>/dev/null
 fi
 }
