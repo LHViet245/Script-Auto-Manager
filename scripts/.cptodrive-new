@@ -512,18 +512,12 @@ version
 # Check config file
 while IFS= read -r filecfg_check ;do
 	if [[ "$(grep -w '^Default run' "$filecfg_check" | awk -F: '{print $NF}' | sed 's/ //g')" == "YES" ]] 2>/dell/null ;then
-		skip_config="yes"
 		dir_filecfg="$filecfg_check"
 		process_config "read_config"
 	else
-		skip_config="no"
+		process_config "run_config"
 	fi
 done< <(find "$config_file" -type f -name "*.config") 2>/dev/null
-
-if [[ "$skip_config" != "yes" ]] ;then
-	process_config "run_config"
-fi
-
 # Run menu
 clear
 echo -e "\n\t\t\t\t${Orange}+----------------------+${NC}"
