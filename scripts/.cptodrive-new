@@ -1,5 +1,4 @@
 #! /bin/bash
-
 #############################################################################################
 ######################################## CONFIG #############################################
 root_folder=
@@ -11,9 +10,11 @@ cptodriveCOMP="$source_script"/"$script_name"_COMP.txt
 cptodriveFAIL="$source_script"/"$script_name"_FAIL.txt
 cptodriveDONE="$source_script"/"$script_name"_DONE.txt
 config_file="$source_script/config"
+log_rclone="$source_script/log"
 
 [[ ! -d "$source_script" ]] && mkdir -p "$source_script"
 [[ ! -d "$config_file" ]] && mkdir -p "$config_file"
+[[ ! -d "$log_rclone" ]] && mkdir -p "$log_rclone"
 
 source "$get_function" "color"
 
@@ -28,7 +29,7 @@ while true
     read -r -n 1 answer
     case $answer in [Yy]* ) return 0 ;;
                     [Nn]* ) return 1 ;;
-                        * ) echo "Enter y or n";;
+                        * ) echo "${Red}Enter y or n${NC}";;
     esac
   done
 }
@@ -49,7 +50,7 @@ if [[ -d "$file" ]] 2>/dev/null ;then
 	root_folder="$root_folder/$filename"
 fi
 # Run Rclone
-if ! rclone copy -vP "$file" "$drive_name:$root_folder" --fast-list --create-empty-src-dirs --ignore-existing ;then
+if ! rclone copy -P "$file" "$drive_name:$root_folder" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
 	echo "$filename" >> "$cptodriveFAIL"
 else
 	echo "$filename" >> "$cptodriveCOMP"
@@ -57,6 +58,8 @@ fi
 }
 
 function copytodriveAUTO() {
+echo -e "${Lightcyan}Automatically create folders sorted by date? (y/n)${NC}"
+ask_user && root_folder="$root_folder/$(date '+%d-%m-%Y')"
 if [[ $# -eq 0 ]] ;then
 	for file in * ;do
 		filename "$file"
@@ -456,10 +459,9 @@ read -r -n 1 -s choice;
 		;;
 
 		4 ) # Reset setting
-			echo -e "\n${Lightcyan}Are you sure to reset the config file? (y/n)${NC}"
+			echo -e "\n${Lightcyan}Are you sure to reset the config file? or Setting new config (y/n)${NC}"
 			ask_user && sed -i '/^\(\s\|#\)*Default run/ c\Default run : NO' "$dir_filecfg"
 			"$0" "$@"
-			exit "$?"
 		;;
 
 		0 ) #Exit
