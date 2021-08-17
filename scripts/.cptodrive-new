@@ -4,7 +4,6 @@
 root_folder=
 drive_name=
 script_name="$(basename "$0")"
-get_function="/home/starfall/github-project/Script-Auto-Manager/feature/get-function"
 source_script="$HOME/.auto-manager-server/$(echo "$script_name" | tr -d '.')"
 cptodriveCOMP="$source_script"/"$script_name"_COMP.txt
 cptodriveFAIL="$source_script"/"$script_name"_FAIL.txt
@@ -16,7 +15,7 @@ log_rclone="$source_script/log"
 [[ ! -d "$config_file" ]] && mkdir -p "$config_file"
 [[ ! -d "$log_rclone" ]] && mkdir -p "$log_rclone"
 
-source "$get_function" "color"
+source get-function "color"
 
 #############################################################################################
 ####################################### FUNCTION ############################################
