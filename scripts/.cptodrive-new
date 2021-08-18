@@ -49,10 +49,12 @@ echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote
 # Check file is Dicrectory or file
 if [[ -d "$file" ]] 2>/dev/null ;then
 	echo -e "${Lightblue}[$filename]${NC} ${Lightblue}is a directory${NC}"
-	root_folder="$root_folder/$filename"
+	filename="/$filename"
+else
+	filename=
 fi
 # Run Rclone
-if ! rclone copy -P "$file" "$drive_name:$root_folder" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
+if ! rclone copy -P "$file" "$drive_name:$root_folder$filename" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
 	echo "$filename" >> "$cptodriveFAIL"
 else
 	echo "$filename" >> "$cptodriveCOMP"
@@ -198,7 +200,7 @@ if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
 	echo -e "\n${BGreen}[COMPLETED]${NC}"
 	while IFS= read -r list ;do
 		if [[ "$list" != "---------------------------" ]] ;then
-			echo -e "${White}"$list"${NC}\t${BGreen}COMPLETED${NC}"
+			echo -e "${Green}"$list"${NC}"
 		else
 			echo -e "$list"
 		fi
@@ -211,7 +213,7 @@ if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
 		echo -e "${Purple}MORE...${NC}"
 		while IFS= read -r list ;do
 			if [[ "$list" != "---------------------------" ]] ;then
-				echo -e "${White}"$list"${NC}\t${BYellow}DONE${NC}"
+				echo -e "${Yellow}"$list"${NC}"
 			else
 				echo -e "$list"
 			fi
@@ -219,7 +221,7 @@ if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
 	else
 		while IFS= read -r list ;do
 			if [[ "$list" != "---------------------------" ]] ;then
-				echo -e "${White}"$list"${NC}\t${BYellow}DONE${NC}"
+				echo -e "${Red}}"$list"${NC}"
 			else
 				echo -e "$list"
 			fi
@@ -402,7 +404,7 @@ testvercomp () {
 }
 
 function version() {
-	version="2.0.1"
+	version="2.0.5"
 }
 
 
