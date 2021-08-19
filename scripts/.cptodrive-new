@@ -409,14 +409,14 @@ testvercomp () {
 }
 
 function version() {
-	version="2.0.6"
+	version="2.0.7"
 }
 
 
 function menuRclone() {
 	# Check new version !
-local new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -w 'version=' | awk -F '=' '{print $NF}' | tr -d '"')"
-testvercomp "$new_version" "$version" ">" && echo -e "\n\t\t${BPurple}NEW VERSION HAS BEEN ! YOU CAN UPDATE IN MENU.${NC}\n"
+local new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -wE 'version="([0-9]{1,}\.)+[0-9]{1,}"' | awk -F '=' '{print $NF}' | tr -d '"')"
+testvercomp "$new_version" "$version" ">" 2>/dev/null && echo -e "\n\t\t\t${BPurple}NEW VERSION ${Lightcyan}$new_version${NC} ${BPurple}HAS BEEN ! YOU CAN UPDATE IN MENU.${NC}\n"
 
 echo -e -n "${BGreen}Loaded:${NC} ${Cyan}$(basename "$dir_filecfg")${NC}\t${BGreen}Created:${NC}${Cyan}$(grep -w '^Created' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Config version:${NC}${Cyan}$(grep -w '^Version' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Default:${NC}${Cyan}$(grep -w '^Default run' "$dir_filecfg" | awk -F: '{print $NF}')${NC}"
 
@@ -506,7 +506,7 @@ read -r -n 1 -s choice;
 		;;
 
 		5 ) # Update Script
-			if testvercomp "$new_version" "$version" ">" ;then
+			if testvercomp "$new_version" "$version" ">" 2>/dev/null;then
 				if ! curl -o "$(dirname "$(readlink -f "$0")")/$script_name" "https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new" 2>/dev/null ;then
 					echo -e "${Red}Upgrade failed. Upgrade download failed!${NC}"
 					exit 1
