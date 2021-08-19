@@ -408,8 +408,15 @@ testvercomp () {
 }
 
 function menuRclone() {
+local choice
+local skip_config
+local folder
+local dir_arg
+local file_extension
+local file
+local new_version
 	# Check new version !
-local new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -wE 'version="([0-9]{1,}\.)+[0-9]{1,}"' | awk -F '=' '{print $NF}' | tr -d '"')"
+new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -wE 'version="([0-9]{1,}\.)+[0-9]{1,}"' | awk -F '=' '{print $NF}' | tr -d '"')"
 testvercomp "$new_version" "$version" ">" 2>/dev/null && echo -e "\t\t${BPurple}NEW VERSION${NC} ${Bcyan}$new_version${NC} ${BPurple}HAS BEEN ! YOU CAN UPDATE IN MENU.${NC}\n"
 
 echo -e -n "${BGreen}Loaded:${NC} ${Cyan}$(basename "$dir_filecfg")${NC}\t${BGreen}Created:${NC}${Cyan}$(grep -w '^Created' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Config version:${NC}${Cyan}$(grep -w '^Version' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Default:${NC}${Cyan}$(grep -w '^Default run' "$dir_filecfg" | awk -F: '{print $NF}')${NC}"
@@ -422,8 +429,7 @@ echo -e "${BWhite}	3 - Copy files by extension .EG:${NC} ${Cyan}srt | mp4 | mp3 
 echo -e "${BWhite}	4 - Reset default config file.${NC}"
 echo -e "${BWhite}	5 - Update version.${NC}"
 echo -e "${BWhite}	0 - Exit${NC}"
-	
-local choice
+
 # Wait for user to make a choice and run chosen functions:	
 read -r -n 1 -s choice;
 
@@ -441,7 +447,7 @@ clear
 			echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			echo -e "${Lightcyan}Name of the folder you want to create: ${NC}"
 			read -r folder
-			{ [[ -n "$folder" ]] 2>/dev/null && root_folder="$root_folder/$folder"; } || echo -e "${Lightblue}Confirm that you have created an additional folder${NC} ${Yellow}[$drive_name:$root_folder]${NC}"
+			[[ -n "$folder" ]] 2>/dev/null && root_folder="$root_folder/$folder" && echo -e "${Lightblue}Confirm that you have created an additional folder${NC} ${Yellow}[$drive_name:$root_folder]${NC}"
 			copytodriveAUTO "$@"
 	
 		;;
@@ -454,23 +460,21 @@ clear
 			echo -e "${Lightcyan}Extended file names must be separated by commas${NC} ${Cyan}' , '${NC} ${Lightcyan}contiguous.${NC}"
 			echo -e "${Lightcyan}Eg:${NC} ${Cyan}srt,mp4,mp3,txt${NC}"
 			read -r file_extension
+			echo -e "${Lightcyan}Name of the folder you want to create more: ${NC}"
+			read -r folder
+
 			file_extension="$(echo "$file_extension" | sed 's/ //g')"
 			[[ "$(echo "$file_extension" | grep -c ",")" -eq 0  ]] && file_extension="$file_extension,"
 			for arg in "$@" ;do
 				dir_arg="$(readlink -f "$arg")"
-				if [[ -d "$dir_arg" ]] ;then
-					! cd "$dir_arg" && echo -e "${Red}Directory not found${NC}" && exit 1
-					skip_loop="no"
-				else
-					skip_loop="yes"
-				fi
-				if [[ "$skip_loop" != "yes" ]] ;then
+				if [[ -d "$dir_arg" ]] || [[ $# -eq 0 ]] ;then
 					if [[ "$SHELL" == "$(which zsh)" ]] 2>/dev/null;then
-						getopt -s nullglob
+						setopt -s nullglob
 					else
 						shopt -s nullglob
 					fi
-					for file in .*{$file_extension} ;do
+					[[ -z "$dir_arg" ]] 2>/dev/null && dir_arg="$PWD"
+					for file in "$dir_arg"/*.{$file_extension} ;do
 						filename "$file"
 						if [ -f "$file" ] 2>/dev/null ;then
 							#text="$(grep -wF "$filename" "$cptodriveCOMP")"
@@ -478,12 +482,14 @@ clear
 								# echo -e "${Yellow}[$filename]${NC} ${BGreen}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
 								echo "$filename" >> "$cptodriveDONE"
 							else
-								copytodrive "$file"
+								if ! copytodrive "$file" ;then
+									echo "$filename" >> "$cptodriveFAIL"
+								else
+									echo "$filename" >> "$cptodriveCOMP"
+								fi
 							fi
 						else 
-							echo -e "${Red}File does not exist${NC} ${Yellow}[$filename]${NC}"
-							echo -e "${Red}Please Check Again${NC}"
-							echo "$filename does not exist" >> "$cptodriveFAIL"
+							echo "$filename" >> "$cptodriveFAIL"
 						fi
 					done
 				fi
