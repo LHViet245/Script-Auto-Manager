@@ -23,6 +23,10 @@ fi
 #############################################################################################
 ####################################### FUNCTION ############################################
 
+function version() {
+	version="2.0.8"
+}
+
 # Function get Filename
 function ask_user() {
 local answer
@@ -122,7 +126,7 @@ if [[ $choice -lt $num ]] && [[ $choice -ge 1 ]] && [[ "$choice" =~ ^[0-9]+$ ]] 
     drive_name="${remote[$num]}"
     echo -e "${Yellow}[$drive_name]${NC} ${Lightblue}selected successfully${NC}\n"
 else
-    #clear
+    clear
     echo -e "${Red}Invalid choice${NC}"
     echo -e "${Red}Sorry! integers only or wrong number\nTRY AGAIN!!${NC}\n"
     config_drive_name_remote
@@ -160,10 +164,10 @@ while true; do
 		num=$foldersub_new
 		previous_directory="$root_folder"
 		root_folder="$root_folder/${foldersub[$num]}"
-#clear
+clear
 		echo -e "${Yellow}[${foldersub[$num]}]${NC} ${Lightblue}selected successfully${NC}\n"
 	elif [[ "$foldersub_new" == ".." ]] ;then
-#clear
+clear
 		echo -e "${Orange}Go Back${NC}\n" 
 		root_folder="$previous_directory"
 		previous_directory="$(echo "$root_folder" | sed -e's,^\(.*\/\).*,\1,g' | sed 's/.$//')"
@@ -176,7 +180,7 @@ while true; do
 		if [[ "$skip_loop" != "yes" ]];then
 			for (( i=1; i < $num; i++ )) ;do
 				if [[ "$foldersub_new" == "${foldersub[$i]}" ]] ;then
-#clear
+clear
 					echo -e "${Yellow}Directory already exists. Will access this folder${NC}\n"
 					root_folder="$root_folder/$foldersub_new"
 					config_root_folder
@@ -184,7 +188,7 @@ while true; do
 				fi
 			done
 		fi
-#clear
+clear
 			previous_directory="$root_folder" 
 			root_folder="$root_folder/$foldersub_new"
 			echo -e "${Lightblue}Success create new folder${NC} ${Cyan}'$foldersub_new'${NC}\n"
@@ -327,7 +331,7 @@ Default run : NO" > "$dir_filecfg"
 					ask_user 2>/dev/null && sed -i '/^\(\s\|#\)*Default run/ c\Default run : YES' "$dir_filecfg"
 					process_config "read_config"
 				elif [[ "$new_config" == "config" ]] ;then
-					#clear
+					clear
 					config_drive_name_remote
 					sleep 0.5
 					config_root_folder
@@ -335,15 +339,15 @@ Default run : NO" > "$dir_filecfg"
 				elif [[ ${new_config:0:4} == "show" ]] && [[ $(echo "$new_config" | awk '{print $NF}') =~ ^[0-9]+$ ]] && [[ $(echo "$new_config" | awk '{print $NF}') -lt "$num_file" ]];then
 						num_file=$(echo "$new_config" | awk '{print $NF}')
 						dir_filecfg="$config_file/${config_name[$num_file]}"
-						! less -X "$dir_filecfg" && #clear && echo -e "${RED}File not found! Check Again! ${NC}" || #clear
+						! less -X "$dir_filecfg" && clear && echo -e "${RED}File not found! Check Again! ${NC}" || clear
 						process_config "run_config"
 				elif [[ ${new_config:0:2} == "rm" ]] && [[ $(echo "$new_config" | awk '{print $NF}') =~ ^[0-9]+$ ]] && [[ $(echo "$new_config" | awk '{print $NF}') -lt "$num_file" ]];then
 						num_file=$(echo "$new_config" | awk '{print $NF}')
 						dir_filecfg="$config_file/${config_name[$num_file]}"
-						! rm "$dir_filecfg" && #clear && echo -e "${RED}File not found! Check Again! ${NC}" || #clear
+						! rm "$dir_filecfg" && clear && echo -e "${RED}File not found! Check Again! ${NC}" || clear
 						process_config "run_config"
 				else
-					#clear
+					clear
 					echo -e "${Red}Invalid choice. Please chose again!${NC}\n"
 					run_config
 				fi
@@ -352,7 +356,7 @@ Default run : NO" > "$dir_filecfg"
 	;;	
 
 	   * ) # Error to run fucntion
-			#clear
+			clear
 	   		echo -e "${Red}ERROR to process config${NC}"
 			echo -e "${Red}Check function${NC} ${Purple}'process_config'${NC} ${Red}at line${NC} ${Purple}216${NC} ${Red}in file${NC} ${Purple}'$0'${NC}"
 			exit 216
@@ -408,11 +412,6 @@ testvercomp () {
     fi
 }
 
-function version() {
-	version="2.0.7"
-}
-
-
 function menuRclone() {
 	# Check new version !
 local new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -wE 'version="([0-9]{1,}\.)+[0-9]{1,}"' | awk -F '=' '{print $NF}' | tr -d '"')"
@@ -436,14 +435,14 @@ read -r -n 1 -s choice;
 	case $choice in 
 		
 		1 )	# Copy File Sang Drive Mac Dinh /syncc/
-			#clear
+			clear
 			echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			copytodriveAUTO "$@"
 		
 		;;
 		
 		2 )  # Tao Thu Muc Dich Den /syncc/FOLDER_HERE/""
-			#clear
+			clear
 			echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			echo -e "${Lightcyan}Name of the folder you want to create: ${NC}"
 			read -r folder
@@ -453,7 +452,7 @@ read -r -n 1 -s choice;
 		;;
 		
 		3 )	# Chi Copy File Subtitle .srt
-			#clear
+			clear
 			echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			echo -e "${Lightcyan}Enter the name of the extension file you want to copy to the remote drive ${NC}"
 			echo -e "${Lightcyan}Enter only the filename extension, no dot${NC} ${Cyan}' . '${NC}"
@@ -521,13 +520,13 @@ read -r -n 1 -s choice;
 		;;
 
 		0 ) #Exit
-			#clear
+			clear
 			echo -e "${Lightblue}Exited${NC}"
 			return 0
 		;;
 		
 		* ) # Not Valid Choice
-			#clear
+			clear
 			echo -e "\n${Red}Not a valid choice${NC}"
 			echo -e "${Red}Please choice some number${NC}\n"
 			menuRclone "$@"
@@ -541,7 +540,7 @@ read -r -n 1 -s choice;
 
 
 ################ RUNNING SCRIPT #######################
-#clear
+clear
 version
 # Check config file
 while IFS= read -r filecfg_check ;do
@@ -557,7 +556,7 @@ done< <(find "$config_file" -type f -name '*.config') 2>/dev/null
 [[ "$skip_config" != "yes" ]] && process_config "run_config"
 
 # Run menu
-##clear
+#clear
 echo -e "\n\t\t\t\t${Orange}+----------------------+${NC}"
 echo -e "\t\t\t\t${Orange}| ${On_Purple}Rclone Copy To Drive${NC} ${Orange}|${NC}"
 echo -e "\t\t\t\t${Orange}+----------------------+${NC}"
