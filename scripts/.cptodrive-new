@@ -48,7 +48,7 @@ function copytodrive() {
 echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote ${Yellow}[$drive_name]${NC}\n"
 # Check file is Dicrectory or file
 if [[ -d "$file" ]] 2>/dev/null ;then
-	echo -e "${Lightblue}[$filename]${NC} ${Lightblue}is a directory${NC}"
+	echo -e "${Yellow}[$filename]${NC} ${Lightblue}is a directory${NC}"
 	filename="/$filename"
 else
 	filename=
@@ -221,7 +221,7 @@ if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
 	else
 		while IFS= read -r list ;do
 			if [[ "$list" != "---------------------------" ]] ;then
-				echo -e "${Red}}"$list"${NC}"
+				echo -e "${Yellow}"$list"${NC}"
 			else
 				echo -e "$list"
 			fi
@@ -234,7 +234,7 @@ if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
 	echo -e "\n${BRed}[FAIL]${NC}"
 	while IFS= read -r list ;do
 		if [[ "$list" != "---------------------------" ]] ;then
-			echo -e "${White}"$list"${NC}\t${BRed}FAIL${NC}"
+			echo -e "${Red}"$list"${NC}\t${BRed}FAIL${NC}"
 		else
 			echo -e "$list"
 		fi
@@ -272,8 +272,13 @@ Default run : NO" > "$dir_filecfg"
 	;;
 
 	read_config ) # Read config file
-			drive_name="$(grep -w '^Drive Name' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')"
-			root_folder="$(grep -w '^Root Folder' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')"
+			if testvercomp "$(grep -w '^Version' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')" "$version" ">" ;then
+				echo -e "${Red}The version of the script is old, not suitable for this config file. Please update to the new version!${NC}"
+				exit 1
+			else
+				drive_name="$(grep -w '^Drive Name' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')"
+				root_folder="$(grep -w '^Root Folder' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')"
+			fi
 	;;
 
 	run_config ) # Load config file
@@ -404,20 +409,24 @@ testvercomp () {
 }
 
 function version() {
-	version="2.0.5"
+	version="2.0.6"
 }
 
 
 function menuRclone() {
+	# Check new version !
+local new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -w 'version=' | awk -F '=' '{print $NF}' | tr -d '"')"
+testvercomp "$new_version" "$version" ">" && echo -e "\n\t\t${BPurple}NEW VERSION HAS BEEN ! YOU CAN UPDATE IN MENU.${NC}\n"
 
-echo -e "${BGreen}Loaded:${NC} ${Cyan}$(basename "$dir_filecfg")${NC}\t${BGreen}Created:${NC}${Cyan}$(grep -w '^Created' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Config version:${NC}${Cyan}$(grep -w '^Version' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Default:${NC}${Cyan}$(grep -w '^Default run' "$dir_filecfg" | awk -F: '{print $NF}')${NC}"
+echo -e -n "${BGreen}Loaded:${NC} ${Cyan}$(basename "$dir_filecfg")${NC}\t${BGreen}Created:${NC}${Cyan}$(grep -w '^Created' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Config version:${NC}${Cyan}$(grep -w '^Version' "$dir_filecfg" | awk -F: '{print $NF}')${NC}\t${BGreen}Default:${NC}${Cyan}$(grep -w '^Default run' "$dir_filecfg" | awk -F: '{print $NF}')${NC}"
 
 echo -e "\n${BWhite}Main Menu: What would you like to do?${NC}\n"
 echo -e "${BWhite}Press the number of your choice:${NC}\n"
 echo -e "${BWhite}	1 - Default copy to root folder -${NC} ${Cyan}$drive_name:$root_folder${NC}"
 echo -e "${BWhite}	2 - Create more folders in the root folder -${NC} ${Cyan}$drive_name:$root_folder/FOLDER_HERE/${NC}"
 echo -e "${BWhite}	3 - Copy files by extension .EG:${NC} ${Cyan}srt | mp4 | mp3 | txt ...${NC}"
-echo -e "${BWhite}	4 - Reset default config file.${NC}\n"
+echo -e "${BWhite}	4 - Reset default config file.${NC}"
+echo -e "${BWhite}	5 - Update version.${NC}"
 echo -e "${BWhite}	0 - Exit${NC}"
 	
 local choice
@@ -494,6 +503,21 @@ read -r -n 1 -s choice;
 			echo -e "\n${Lightcyan}Are you sure to reset the config file? or Setting new config (y/n)${NC}"
 			ask_user && sed -i '/^\(\s\|#\)*Default run/ c\Default run : NO' "$dir_filecfg"
 			"$0" "$@"
+		;;
+
+		5 ) # Update Script
+			if testvercomp "$new_version" "$version" ">" ;then
+				if ! curl -o "$(dirname "$(readlink -f "$0")")/$script_name" "https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new" 2>/dev/null ;then
+					echo -e "${Red}Upgrade failed. Upgrade download failed!${NC}"
+					exit 1
+				else
+					chmod +x "$(dirname "$(readlink -f "$0")")/$script_name"
+					echo -e "${Green}Successful upgrade version${NC} ${Lightcyan}'$new_version'${NC}${Green}. You can use it now!${NC}"
+					exit 0
+				fi
+			else
+				echo -e "${Green}You are using the latest version${NC} ${Lightcyan}'$new_version'${NC}"
+			fi
 		;;
 
 		0 ) #Exit
