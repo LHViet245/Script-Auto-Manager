@@ -24,7 +24,7 @@ fi
 ####################################### FUNCTION ############################################
 
 function version() {
-	version="2.1.1"
+	version="2.1.2"
 }
 
 # Function get Filename
@@ -473,7 +473,7 @@ clear
 					else
 						shopt -s nullglob
 					fi
-					[[ -z "$dir_arg" ]] 2>/dev/null && dir_arg="$PWD"
+					[[ $# -eq 0 ]] 2>/dev/null && dir_arg="$PWD"
 					for file in "$dir_arg"/*.{$file_extension} ;do
 						filename "$file"
 						if [ -f "$file" ] 2>/dev/null ;then
