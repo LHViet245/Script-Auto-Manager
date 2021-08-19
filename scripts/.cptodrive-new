@@ -49,9 +49,9 @@ return
 
 #Function Rclone
 function copytodrive() {
-echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote ${Yellow}[$drive_name]${NC}\n"
 # Check file is Dicrectory or file
 [[ -d "$file" ]] 2>/dev/null && echo -e "${Yellow}[$filename]${NC} ${Lightblue}is a directory${NC}"
+echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote ${Yellow}[$drive_name:$root_folder]${NC}\n"
 # Run Rclone
 if ! rclone copy -P "$file" "$drive_name:$root_folder/$filename" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
 	echo "$filename" >> "$cptodriveFAIL"
@@ -71,7 +71,7 @@ if [[ $# -eq 0 ]] ;then
 			if [[ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ]] 2>/dev/null ;then
 				echo "$filename" >> "$cptodriveDONE"
 			else
-				echo -e "\n${Lightblue}Confirm${NC} ${Yellow}[$filename]${NC} ${Lightblue}has not been copied to Remote${NC} ${Yellow}[$drive_name]]${NC}"
+				echo -e "\n${Lightblue}Confirm${NC} ${Yellow}[$filename]${NC} ${Lightblue}has not been copied to Remote${NC} ${Yellow}[$drive_name]${NC}"
 				copytodrive "$file"
 			fi
 		fi
