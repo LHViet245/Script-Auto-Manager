@@ -24,7 +24,7 @@ fi
 ####################################### FUNCTION ############################################
 
 function version() {
-	version="2.1.0"
+	version="2.1.1"
 }
 
 # Function get Filename
@@ -51,17 +51,12 @@ return
 function copytodrive() {
 echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote ${Yellow}[$drive_name]${NC}\n"
 # Check file is Dicrectory or file
-if [[ -d "$file" ]] 2>/dev/null ;then
-	echo -e "${Yellow}[$filename]${NC} ${Lightblue}is a directory${NC}"
-	filename="/$filename"
-else
-	filename=
-fi
+[[ -d "$file" ]] 2>/dev/null && echo -e "${Yellow}[$filename]${NC} ${Lightblue}is a directory${NC}"
 # Run Rclone
-if ! rclone copy -P "$file" "$drive_name:$root_folder$filename" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
-	echo "$(echo "$filename" | tr -d '/')" >> "$cptodriveFAIL"
+if ! rclone copy -P "$file" "$drive_name:$root_folder/$filename" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
+	echo "$filename" >> "$cptodriveFAIL"
 else
-	echo "$(echo "$filename" | tr -d '/')" >> "$cptodriveCOMP"
+	echo "$filename" >> "$cptodriveCOMP"
 fi
 }
 
