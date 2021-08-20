@@ -41,7 +41,7 @@ while true
 }
 
 function filename() {
-	filename=$(basename "$file")
+	filename=$(basename "$1")
     #extension=${filename##*.}
     #name=${filename%.*}
 return
@@ -173,15 +173,13 @@ clear
 		fi
 	else
 		if [[ "$skip_loop" != "yes" ]];then
-			for (( i=1; i < $num; i++ )) ;do
-				if [[ "$foldersub_new" == "${foldersub[$i]}" ]] ;then
+				if [[ "${foldersub[*]}" =~ (^|[[:space:]])"$foldersub_new"($|[[:space:]]) ]] ;then
 clear
 					echo -e "${Yellow}Directory already exists. Will access this folder${NC}\n"
 					root_folder="$root_folder/$foldersub_new"
 					config_root_folder
 					return
 				fi
-			done
 		fi
 clear
 			previous_directory="$root_folder" 
@@ -411,8 +409,6 @@ function menuRclone() {
 local choice
 local skip_config
 local folder
-local dir_arg
-local file_extension
 local new_version
 	# Check new version !
 new_version="$(curl -v --silent https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new 2>&1 | grep -wE 'version="([0-9]{1,}\.)+[0-9]{1,}"' | awk -F '=' '{print $NF}' | tr -d '"')"
@@ -432,7 +428,7 @@ echo -e "${BWhite}	0 - Exit${NC}"
 # Wait for user to make a choice and run chosen functions:	
 read -r -n 1 -s choice;
 
-	case $choice in 
+case $choice in 
 		
 		1 )	# Copy File Sang Drive Mac Dinh /syncc/
 clear
@@ -452,47 +448,70 @@ clear
 		;;
 		
 		3 )	# Chi Copy File Subtitle .srt
-clear
+clear	
 			echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			echo -e "${Lightcyan}Enter the name of the extension file you want to copy to the remote drive ${NC}"
 			echo -e "${Lightcyan}Enter only the filename extension, no dot${NC} ${Cyan}' . '${NC}"
-			echo -e "${Lightcyan}Extended file names must be separated by commas${NC} ${Cyan}' , '${NC} ${Lightcyan}contiguous.${NC}"
-			echo -e "${Lightcyan}Eg:${NC} ${Cyan}srt,mp4,mp3,txt${NC}"
-			read -r file_extension
-			echo -e "${Lightcyan}Name of the folder you want to create more:${NC} ${Cyan}'$drive_name:$root_folder'${NC}"
-			read -r folder
-
-			file_extension="$(echo "$file_extension" | sed 's/ //g')"
-			[[ "$(echo "$file_extension" | grep -c ",")" -eq 0  ]] && file_extension="$file_extension,"
-			for arg in "$@" ;do
-				dir_arg="$(readlink -f "$arg")"
-				if [[ -d "$dir_arg" ]] || [[ $# -eq 0 ]] ;then
-					[[ $# -eq 0 ]] 2>/dev/null && dir_arg="$PWD"
-					if [[ "$SHELL" == "$(which zsh)" ]] 2>/dev/null;then
-						setopt -s nullglob
-					else
-						shopt -s nullglob
-					fi
-					for file in "$dir_arg"/*.{$file_extension} ;do
-						filename "$file"
-						if [ -f "$file" ] 2>/dev/null ;then
-							#text="$(grep -wF "$filename" "$cptodriveCOMP")"
-							if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
-								# echo -e "${Yellow}[$filename]${NC} ${BGreen}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
-								echo "$filename" >> "$cptodriveDONE"
-							else
-								if ! copytodrive "$file" ;then
-									echo "$filename" >> "$cptodriveFAIL"
-								else
-									echo "$filename" >> "$cptodriveCOMP"
-								fi
-							fi
-						else 
-							echo "$filename" >> "$cptodriveFAIL"
-						fi
-					done
-				fi
+			echo -e "${Lightcyan}Enter the file format extension name one by one${NC}"
+			echo -e "${Lightcyan}Eg:${NC} ${Cyan}srt | mp4 | mp3 | txt${NC}"
+			file_extension=()
+			while IFS= read -r file_extension_input; do
+				[[ -z "$file_extension_input" ]] && echo -e "${Green}Successfully added file extension${NC}" && break  # break if line is empty
+				file_extension_input="$(echo "$file_extension_input" | sed 's/ //g')"
+				file_extension+=("$file_extension_input")
+				echo -e "${Lightcyan}Next extension (end with an empty line): ${NC}"
+				echo -n "${Lightcyan}Added: ${NC}" && IFS='|';echo -e "${Cyan}${file_extension[*]// /|}${NC}";IFS=$' \t\n'
 			done
+			echo -e "${Lightcyan}Name of the folder you want to create more in${NC} ${Cyan}'$drive_name:$root_folder'${NC}"
+			read -r folder
+			[[ -n "$folder" ]] && root_folder="$root_folder/$folder"
+			if [[ $# -eq 0 ]] ;then
+				shopt -s nullglob
+				for file in *.{${file_extension}} ;do
+					filename "$file"
+					if [ -f "$file" ]  ;then
+						#text="$(grep -wF "$filename" "$cptodriveCOMP")"
+						if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+							# echo -e "${Yellow}[$filename]${NC} ${BGreen}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
+							echo "$filename" >> "$cptodriveDONE"
+						else
+							if ! copytodrive "$file" ;then
+								echo "$filename" >> "$cptodriveFAIL"
+							else
+								echo "$filename" >> "$cptodriveCOMP"
+							fi
+						fi
+					else 
+						echo "$filename" >> "$cptodriveFAIL"
+					fi
+				done
+
+			else
+				for arg in "$@" ;do
+					dir_arg="$(readlink -f "$arg")"
+					if [[ -d "$dir_arg" ]];then
+						shopt -s nullglob
+						for file in "$dir_arg"/*.{$file_extension} ;do
+							filename "$file"
+							if [ -f "$file" ]  ;then
+								#text="$(grep -wF "$filename" "$cptodriveCOMP")"
+								if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
+									# echo -e "${Yellow}[$filename]${NC} ${BGreen}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
+									echo "$filename" >> "$cptodriveDONE"
+								else
+									if ! copytodrive "$file" ;then
+										echo "$filename" >> "$cptodriveFAIL"
+									else
+										echo "$filename" >> "$cptodriveCOMP"
+									fi
+								fi
+							else 
+								echo "$filename" >> "$cptodriveFAIL"
+							fi
+						done
+					fi
+				done
+			fi
 				## List file Completed or Fail or Done
 			checkfile
 		
