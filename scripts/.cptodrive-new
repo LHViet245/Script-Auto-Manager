@@ -21,7 +21,7 @@ log_rclone="$source_script/log"
 ####################################### FUNCTION ############################################
 
 function version() {
-	version="2.1.5"
+	version="2.1.6"
 }
 
 # Function get Filename
