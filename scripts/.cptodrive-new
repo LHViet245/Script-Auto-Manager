@@ -510,6 +510,7 @@ clear
 				fi
 			else
 				echo -e "${Green}You are using the latest version${NC} ${Lightcyan}'$new_version'${NC}"
+				menuRclone "$@"
 			fi
 		;;
 
