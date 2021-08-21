@@ -1,6 +1,8 @@
 #! /bin/bash
 #############################################################################################
 ######################################## CONFIG #############################################
+first="yes" # for the command to run only once
+num_check=1 # count file completed
 root_folder=
 drive_name=
 script_name="$(basename "$0")"
@@ -15,16 +17,11 @@ log_rclone="$source_script/log"
 [[ ! -d "$config_file" ]] && mkdir -p "$config_file"
 [[ ! -d "$log_rclone" ]] && mkdir -p "$log_rclone"
 
-if [[ -f "$(which get-function)" ]] ;then
-	. get-function "color"
-else
-	echo -e "\nGet color function error. Will run without color\n"
-fi
 #############################################################################################
 ####################################### FUNCTION ############################################
 
 function version() {
-	version="2.1.4"
+	version="2.1.5"
 }
 
 # Function get Filename
@@ -50,13 +47,16 @@ return
 #Function Rclone
 function copytodrive() {
 # Check file is Dicrectory or file
-[[ -d "$file" ]] 2>/dev/null && echo -e "${Yellow}[$filename]${NC} ${Lightblue}is a directory${NC}"
-echo -e "${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} to Remote ${Yellow}[$drive_name:$root_folder]${NC}\n"
+[[ -d "$1" ]] 2>/dev/null && echo -e "${Yellow}[$filename]${NC} ${Lightblue}is a directory${NC}"
+echo -e "\n${Lightblue}Start copying file${NC} ${Yellow}[$filename]${NC} ${Lightblue}to Remote${NC} ${Yellow}[$drive_name:$root_folder]${NC}"
 # Run Rclone
-if ! rclone copy -P "$file" "$drive_name:$root_folder/$filename" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
+if ! rclone copy -P "$1" "$drive_name:$root_folder/$filename" --fast-list --create-empty-src-dirs --ignore-existing --log-file="$log_rclone/log_rclone_$(date '+%d%m%Y').txt" --log-level DEBUG;then
 	echo "$filename" >> "$cptodriveFAIL"
 else
+	[[ "$first" == "yes" ]] && echo "---------------------------" >> "$cptodriveCOMP"
 	echo "$filename" >> "$cptodriveCOMP"
+	first="no"      # for the command to run only once
+	((num_check++)) # count file completed
 fi
 }
 
@@ -199,30 +199,30 @@ if [[ -f "$cptodriveCOMP" ]] 2>/dev/null ;then
 		if [[ "$list" != "---------------------------" ]] ;then
 			echo -e "${Green}"$list"${NC}"
 		else
-			echo -e "$list"
+			echo -n "$list " ;echo -e " ${Purple}Total $(($num_check - 1)) file${NC}"
 		fi
-	done < <(tail -n $(($# + 4)) "$cptodriveCOMP") 2>/dev/null 
+	done < <(tail -n $(($num_check + 2)) "$cptodriveCOMP") 2>/dev/null 
 fi
 	## List File Done
 if [[ -f "$cptodriveDONE" ]] 2>/dev/null ;then
 	echo -e "\n${BYellow}[Done]${NC}"
-	if [ $# -gt 20 ] 2>/dev/null ;then
+	if [ $# -gt 10 ] 2>/dev/null ;then
 		echo -e "${Purple}MORE...${NC}"
 		while IFS= read -r list ;do
 			if [[ "$list" != "---------------------------" ]] ;then
 				echo -e "${Yellow}"$list"${NC}"
 			else
-				echo -e "$list"
+				echo "$list"
 			fi
-		done < <(tail -n 10 "$cptodriveDONE") 2>/dev/null
+		done < <(tail -n 8 "$cptodriveDONE") 2>/dev/null
 	else
 		while IFS= read -r list ;do
 			if [[ "$list" != "---------------------------" ]] ;then
 				echo -e "${Yellow}"$list"${NC}"
 			else
-				echo -e "$list"
+				echo "$list"
 			fi
-		done < <(tail -n $(($# + 4)) "$cptodriveDONE") 2>/dev/null
+		done < <(tail "$cptodriveDONE") 2>/dev/null
 	fi
 	rm "$cptodriveDONE" 2>/dev/null
 fi
@@ -235,7 +235,7 @@ if [[ -f "$cptodriveFAIL" ]] 2>/dev/null ;then
 		else
 			echo -e "$list"
 		fi
-	done < <(tail -n $(($# + 4)) "$cptodriveFAIL") 2>/dev/null
+	done < <(tail "$cptodriveFAIL") 2>/dev/null
 	rm "$cptodriveFAIL" 2>/dev/null
 fi
 }
@@ -300,7 +300,6 @@ Default run : NO" > "$dir_filecfg"
 				echo -e "${Purple}No config found${NC}"
 				echo -e "${Green}Will configure the drive now.${NC}"
 				config_drive_name_remote
-				sleep 0.5
 				config_root_folder
 				process_config "create_and_show"
 			else
@@ -326,7 +325,6 @@ Default run : NO" > "$dir_filecfg"
 				elif [[ "$new_config" == "config" ]] ;then
 clear
 					config_drive_name_remote
-					sleep 0.5
 					config_root_folder
 					process_config "create_and_show"
 				elif [[ ${new_config:0:4} == "show" ]] && [[ $(echo "$new_config" | awk '{print $NF}') =~ ^[0-9]+$ ]] && [[ $(echo "$new_config" | awk '{print $NF}') -lt "$num_file" ]];then
@@ -345,6 +343,7 @@ clear
 					run_config
 				fi
 			fi
+clear
 
 	;;	
 
@@ -432,14 +431,14 @@ case $choice in
 		
 		1 )	# Copy File Sang Drive Mac Dinh /syncc/
 clear
-			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			#echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			copytodriveAUTO "$@"
 		
 		;;
 		
 		2 )  # Tao Thu Muc Dich Den /syncc/FOLDER_HERE/""
 clear
-			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			#echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			echo -e "${Lightcyan}Name of the folder you want to create: ${NC}"
 			read -r folder
 			[[ -n "$folder" ]] 2>/dev/null && root_folder="$root_folder/$folder" && echo -e "${Lightblue}Confirm that you have created an additional folder${NC} ${Yellow}[$drive_name:$root_folder]${NC}"
@@ -449,72 +448,48 @@ clear
 		
 		3 )	# Chi Copy File Subtitle .srt
 clear	
-			echo -e "\n---------------------------" >> "$cptodriveCOMP"
+			file_extension=()
+			#echo -e "\n---------------------------" >> "$cptodriveCOMP"
 			echo -e "${Lightcyan}Enter the name of the extension file you want to copy to the remote drive ${NC}"
 			echo -e "${Lightcyan}Enter only the filename extension, no dot${NC} ${Cyan}' . '${NC}"
 			echo -e "${Lightcyan}Enter the file format extension name one by one${NC}"
 			echo -e "${Lightcyan}Eg:${NC} ${Cyan}srt | mp4 | mp3 | txt${NC}"
-			file_extension=()
 			while IFS= read -r file_extension_input; do
 				[[ -z "$file_extension_input" ]] && echo -e "${Green}Successfully added file extension${NC}" && break  # break if line is empty
 				file_extension_input="$(echo "$file_extension_input" | sed 's/ //g')"
 				file_extension+=("$file_extension_input")
 				echo -e "${Lightcyan}Next extension (end with an empty line): ${NC}"
-				echo -n "${Lightcyan}Added: ${NC}" && IFS='|';echo -e "${Cyan}${file_extension[*]// /|}${NC}";IFS=$' \t\n'
+				echo -ne "${Lightcyan}Added: ${NC}";IFS=',';echo -e "${Cyan}${file_extension[*]// /,}${NC}";IFS=$' \t\n'
 			done
 			echo -e "${Lightcyan}Name of the folder you want to create more in${NC} ${Cyan}'$drive_name:$root_folder'${NC}"
 			read -r folder
 			[[ -n "$folder" ]] && root_folder="$root_folder/$folder"
 			if [[ $# -eq 0 ]] ;then
-				shopt -s nullglob
-				for file in *.{${file_extension}} ;do
-					filename "$file"
-					if [ -f "$file" ]  ;then
-						#text="$(grep -wF "$filename" "$cptodriveCOMP")"
-						if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
-							# echo -e "${Yellow}[$filename]${NC} ${BGreen}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
-							echo "$filename" >> "$cptodriveDONE"
-						else
-							if ! copytodrive "$file" ;then
-								echo "$filename" >> "$cptodriveFAIL"
-							else
-								echo "$filename" >> "$cptodriveCOMP"
-							fi
+				for extension in "${file_extension[@]}" ;do
+					while IFS= read -r file ;do
+						if [[ -f "$file" ]] ;then
+							filename "$file"
+							copytodrive "$file"
 						fi
-					else 
-						echo "$filename" >> "$cptodriveFAIL"
-					fi
-				done
-
+					done< <(find . -type f -name "*.$extension")
+				done 
 			else
 				for arg in "$@" ;do
-					dir_arg="$(readlink -f "$arg")"
-					if [[ -d "$dir_arg" ]];then
-						shopt -s nullglob
-						for file in "$dir_arg"/*.{$file_extension} ;do
-							filename "$file"
-							if [ -f "$file" ]  ;then
-								#text="$(grep -wF "$filename" "$cptodriveCOMP")"
-								if [ "$filename" == "$(grep -wF "$filename" "$cptodriveCOMP")" ] 2>/dev/null ;then
-									# echo -e "${Yellow}[$filename]${NC} ${BGreen}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
-									echo "$filename" >> "$cptodriveDONE"
-								else
-									if ! copytodrive "$file" ;then
-										echo "$filename" >> "$cptodriveFAIL"
-									else
-										echo "$filename" >> "$cptodriveCOMP"
-									fi
+					if [[ -d "$arg" ]];then
+						for extension in "${file_extension[@]}" ;do
+							while IFS= read -r file ;do
+								if [[ -f "$file" ]] ;then
+									filename "$file"
+									copytodrive "$file"
 								fi
-							else 
-								echo "$filename" >> "$cptodriveFAIL"
-							fi
+							done< <(find "$(readlink -f "$arg")" -type f -name "*.$extension")
 						done
+					else
+						echo -e "${Yellow}[$arg]${NC} ${Red}is not dicrectory${NC}"
 					fi
 				done
 			fi
-				## List file Completed or Fail or Done
 			checkfile
-		
 		;;
 
 		4 ) # Reset setting
@@ -562,6 +537,14 @@ clear
 clear
 version
 
+# Get color fuction
+if [[ -f "$(which get-function)" ]];then
+	. get-function "color"
+elif [[ -f /home/starfall/github-project/Script-Auto-Manager/feature/get-function ]];then
+	. /home/starfall/github-project/Script-Auto-Manager/feature/get-function "color"
+else
+	echo -e "\nGet color function error. Will run without color\n"
+fi
 # Debug clear mode
 if [[ "$1" == "debug-on" ]] ;then
 	sed -i '/^\(\s\|#\)*clear/ c\#clear' "$0"
@@ -586,7 +569,7 @@ done< <(find "$config_file" -type f -name '*.config') 2>/dev/null
 [[ "$skip_config" != "yes" ]] && process_config "run_config"
 
 # Run menu
-clear
+#clear
 echo -e "\n\t\t\t\t${Orange}+----------------------+${NC}"
 echo -e "\t\t\t\t${Orange}| ${On_Purple}Rclone Copy To Drive${NC} ${Orange}|${NC}"
 echo -e "\t\t\t\t${Orange}+----------------------+${NC}"
