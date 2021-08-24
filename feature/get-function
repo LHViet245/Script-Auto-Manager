@@ -5,7 +5,7 @@
 
 function get-color() {
 # Reset
-NC='\e[0m'       # Text Reset
+NC='\e[0m'              # Text Reset
 
 # Regular Colors
 Black='\e[0;30m'        # Black
@@ -15,11 +15,13 @@ Yellow='\e[0;33m'       # Yellow
 Blue='\e[0;34m'         # Blue
 Purple='\e[0;35m'       # Purple
 Cyan='\e[0;36m'         # Cyan
-White='\e[0;37m'        # White
-Lightcyan='\e[1;37m'    # Light cyan
-Lightblue='\e[1;34m'    # Light blue
+White='\e[0;97m'        # White
 Orange=$'\e[0;33m'      # Orange
-
+Lightcyan='\e[1;96m'    # Light cyan
+Lightblue='\e[1;94m'    # Light blue
+Lightgreen='\e[0;92m'   # Light green
+Lightgray='\e[1;37m'    # Light gray
+Lightyellow='\e[1;93m'  # Light gray
 # Bold
 BBlack='\e[1;30m'       # Black
 BRed='\e[1;31m'         # Red
@@ -28,7 +30,7 @@ BYellow='\e[1;33m'      # Yellow
 BBlue='\e[1;34m'        # Blue
 BPurple='\e[1;35m'      # Purple
 BCyan='\e[1;36m'        # Cyan
-BWhite='\e[1;37m'       # White
+BWhite='\e[1;97m'       # White
 
 # Underline
 UBlack='\e[4;30m'       # Black
