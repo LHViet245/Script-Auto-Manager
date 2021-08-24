@@ -107,6 +107,8 @@ num_check_comp=0
 num_check_fail=0
 echo -e "${Lightgray}Automatically create folders sorted by date? (y/n)${NC}"
 ask_user && root_folder="$root_folder/$(date '+%d-%m-%Y')"
+echo -e "${Lightgray}Copy all files including copied files (y/n)${NC}"
+ask_user && local skip_file="yes"
 clear
 if [[ $# -eq 0 ]] ;then
 	FILECOUNT="$(find "$PWD"/* -maxdepth 1 -type f -printf x | wc -c)"
@@ -124,7 +126,7 @@ if [[ $# -eq 0 ]] ;then
 		filename "$file"
 		if [[ -e "$file" ]] 2>/dev/null;then
 			#text=$(grep -wF "$filename" "$cptodriveCOMP")
-			if [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] 2>/dev/null ;then
+			if { [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] && [[ "$skip_file" != "yes" ]];} 2>/dev/null ;then
 				echo "$filename" >> "$cptodriveDONE"
 				num_check_done=$((num_check_done+1))
 			else
@@ -150,7 +152,7 @@ else
 		filename "$file"
 		if [ -e "$file" ] ;then
 			#text="$(grep -wF "$filename" "$cptodriveCOMP")"
-			if [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] 2>/dev/null ;then
+			if { [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] && [[ "$skip_file" != "yes" ]];} 2>/dev/null ;then
 				#echo -e "${Yellow}[$filename]${NC} ${Green}Da Copy Sang Drive${NC} ${Yellow}[vietle]${NC}"
 				echo "$filename" >> "$cptodriveDONE"
 				num_check_done=$((num_check_done+1))
@@ -386,7 +388,6 @@ Default run : NO" > "$dir_filecfg"
 				echo -e "${Lightgray}Type${Nc} ${Cyan}'rm [number]'${NC} ${Lightgray}to delete config file. Eg.${NC} ${Cyan}'rm 1'${NC}"
 				echo -e "${UWhite}Enter blank will automatically load the first config file.${NC}"
 				read -r new_config
-					
 				if { [[ "$new_config" -lt $num_file ]] && [[ "$new_config" -ge 1 ]] && [[ "$new_config" =~ ^[0-9]+$ ]];} 2>/dev/null; then
 					num_file=$new_config
 					dir_filecfg="$config_file/${config_name[$num_file]}"
@@ -550,10 +551,12 @@ clear
 			echo -e "${Lightgray}Name of the folder you want to create more in${NC} ${Cyan}'$drive_name:$root_folder'${NC}"
 			read -r folder
 			[[ -n "$folder" ]] && root_folder="$root_folder/$folder"
+			echo -e "${Lightgray}Copy all files including copied files (y/n)${NC}"
+			ask_user && local skip_file="yes"
 			if [[ $# -eq 0 ]] ;then
 				echo -ne "\n${BGreen}CHECKED:${NC}  "
 				for extension in "${file_extension[@]}" ;do
-					total[$extension]="$(find "$PWD"/*."$extension" -maxdepth 1 -type f -printf x 2>/dev/null | wc -c)"
+					local total[$extension]="$(find "$PWD"/*."$extension" -maxdepth 1 -type f -printf x 2>/dev/null | wc -c)"
 					TotalFile=$(( TotalFile+${total[$extension]} ))
 					echo -ne "${Lightgray}${total[$extension]}${NC} ${Lightcyan]}$extension${NC} | "
 				done
@@ -562,7 +565,7 @@ clear
 					while IFS= read -r file ;do
 						if [[ -f "$file" ]] ;then
 							filename "$file"
-							if [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] 2>/dev/null ;then
+							if { [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] && [[ "$skip_file" != "yes" ]];} 2>/dev/null ;then
 								echo "$filename" >> "$cptodriveDONE"
 								num_check_done=$((num_check_done+1))
 							else
@@ -577,10 +580,9 @@ clear
 						echo -ne "${BGreen}$arg:${NC}  "
 						local TotalFileSinge=0
 						for extension in "${file_extension[@]}" ;do
-							total[$extension]="$(find "$(readlink -f "$arg")"/*."$extension" -maxdepth 1 -type f -printf x 2>/dev/null | wc -c)"
+							local total[$extension]="$(find "$(readlink -f "$arg")"/*."$extension" -maxdepth 1 -type f -printf x 2>/dev/null | wc -c)"
 							local TotalFileSinge=$(( TotalFileSinge+${total[$extension]} ))
 							echo -ne "${Lightgray}${total[$extension]}${NC} ${Lightcyan}$extension${NC} | "
-							local TotalFileSingeGlobal=$TotalFileSinge
 						done
 						TotalFile=$((TotalFile+TotalFileSinge))
 						echo -e "${BGreen}TOTAL:${NC} ${Lightgray}$TotalFileSinge${NC}"
@@ -595,7 +597,7 @@ clear
 							while IFS= read -r file ;do
 								if [[ -f "$file" ]] ;then
 									filename "$file"
-									if [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] 2>/dev/null ;then
+									if { [[ $(grep -wFc "$filename" "$cptodriveCOMP") -ne 0 ]] && [[ "$skip_file" != "yes" ]];} 2>/dev/null ;then
 										echo "$filename" >> "$cptodriveDONE"
 										num_check_done=$((num_check_done+1))
 									else
@@ -704,7 +706,7 @@ done< <(find "$config_file" -type f -name '*.config') 2>/dev/null
 [[ "$skip_config" != "yes" ]] && process_config "run_config"
 
 # Run menu
-#clear
+# clear
 echo -e "\n\t\t\t\t${Orange}+----------------------+${NC}"
 echo -e "\t\t\t\t${Orange}| ${On_Purple}Rclone Copy To Drive${NC} ${Orange}|${NC}"
 echo -e "\t\t\t\t${Orange}+----------------------+${NC}"
