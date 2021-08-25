@@ -23,33 +23,10 @@ log_rclone="$source_script/log"
 function ERROR() { # Color Red
 	echo -e "${Red}$*${NC}"
 }
-function INFO () { # Color Light Gray
-	case $1 in
-		no_newline ) echo -ne "${Lightgray}$2${NC}}";;
-				 * ) echo -e "${Lightgray}$1${NC}";;
-	esac
-}
-function EVENT() { # Color Light Green
-	case $1 in
-		no_newline ) echo -ne "${Lightgreen}$2${NC}}";;
-				 * ) echo -e "${Lightgreen}$1${NC}";;
-	esac
-}
-function DATA() { # Color Cyan
-	case $1 in
-		no_newline ) echo -ne "${Cyan}$2${NC}}";;
-				 * ) echo -e "${Cyan}$1${NC}";;
-	esac
-}
-function OBJECT() { # Color Yellow
-	case $1 in
-		no_newline ) echo -ne "${Yellow}$2${NC}}";;
-				 * ) echo -e "${Yellow}$1${NC}";;
-	esac
-}
 
+# Version Script
 function version() {
-	version="2.1.9"
+	version="2.2.0"
 }
 
 # Function get Filename
@@ -111,9 +88,9 @@ echo -e "${Lightgray}Copy all files including copied files (y/n)${NC}"
 ask_user && local skip_file="yes"
 clear
 if [[ $# -eq 0 ]] ;then
-	FILECOUNT="$(find "$PWD"/* -maxdepth 1 -type f -printf x | wc -c)"
-	DIRCOUNT="$(find "$PWD"/* -maxdepth 1 -type d -printf x | wc -c)"
-	TotalFile="$(find "$PWD"/* -maxdepth 1 -printf x | wc -c)"
+	FILECOUNT="$(find "$PWD"/* -maxdepth 0 -type f -printf x | wc -c)"
+	DIRCOUNT="$(find "$PWD"/* -maxdepth 0 -type d -printf x | wc -c)"
+	TotalFile="$(find "$PWD"/* -maxdepth 0 -printf x | wc -c)"
 	echo -ne "\n${BGreen}CHECKED:${NC}  "
 	if [[ $FILECOUNT -ne 0 ]] ;then
 		echo -ne "${Lightgray}$FILECOUNT${NC} ${Purple}File${NC} | "
@@ -162,7 +139,7 @@ else
 			fi
 		else 
 			echo -e "\n${Red}Does not exist${NC} ${Yellow}[$filename]${NC}"
-			echo -e "${Red}Please Check Again${NC}\n"
+			ERROR "Please Check Again\n"
 			echo "$filename does not exist" >> "$cptodriveFAIL"
 		fi
 	done
@@ -194,8 +171,8 @@ if [[ $choice -lt $num ]] && [[ $choice -ge 1 ]] && [[ "$choice" =~ ^[0-9]+$ ]] 
     echo -e "${Yellow}[$drive_name]${NC} ${Lightblue}selected successfully${NC}\n"
 else
 clear
-    echo -e "${Red}Invalid choice${NC}"
-    echo -e "${Red}Sorry! integers only or wrong number\nTRY AGAIN!!${NC}\n"
+    ERROR "Invalid choice"
+    ERROR "Sorry! integers only or wrong number\nTRY AGAIN!!\n"
     config_drive_name_remote
 fi
 }
@@ -331,7 +308,7 @@ Default run : NO" > "$dir_filecfg"
 
 	read_config ) # Read config file
 			if testvercomp "$(grep -w '^Version' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')" "$version" ">" ;then
-				echo -e "${Red}The version of the script is old, not suitable for this config file. Please update to the new version!${NC}"
+				ERROR "The version of the script is old, not suitable for this config file. Please update to the new version!"
 				exit 1
 			else
 				drive_name="$(grep -w '^Drive Name' "$dir_filecfg" | awk -F: '{print $NF}' | sed 's/ //g')"
@@ -376,7 +353,7 @@ Default run : NO" > "$dir_filecfg"
 					else
 						echo -e "\n${Orange}Found${NC} ${Cyan}$file_found${NC} ${Orange}config files on Remote${NC}\n"
 						echo -e "${Lightgray}Will sync now....${NC}"
-						! rclone copy --quiet --progress --progress-terminal-title "$drive_name:/config/$(echo "$script_name" | tr -d '.')" "$config_file" --fast-list --include "*.config" && echo -e "\n${Red}Sync ERROR! Check again! ${NC}" && exit 1
+						! rclone copy --quiet --progress --progress-terminal-title "$drive_name:/config/$(echo "$script_name" | tr -d '.')" "$config_file" --fast-list --include "*.config" && ERROR "\nSync ERROR! Check again!" && exit 1
 						echo -e "\n${Green}SYNC COMPLETE! Please run again${NC}"
 						exit 0
 					fi
@@ -408,16 +385,16 @@ clear
 				elif [[ ${new_config:0:4} == "show" ]] && [[ $(echo "$new_config" | awk '{print $NF}') =~ ^[0-9]+$ ]] && [[ $(echo "$new_config" | awk '{print $NF}') -lt "$num_file" ]];then
 						num_file=$(echo "$new_config" | awk '{print $NF}')
 						dir_filecfg="$config_file/${config_name[$num_file]}"
-						! less -X "$dir_filecfg" && clear && echo -e "${RED}File not found! Check Again! ${NC}" || clear
+						! less -X "$dir_filecfg" && clear && ERROR "File not found! Check Again!" || clear
 						process_config "run_config"
 				elif [[ ${new_config:0:2} == "rm" ]] && [[ $(echo "$new_config" | awk '{print $NF}') =~ ^[0-9]+$ ]] && [[ $(echo "$new_config" | awk '{print $NF}') -lt "$num_file" ]];then
 						num_file=$(echo "$new_config" | awk '{print $NF}')
 						dir_filecfg="$config_file/${config_name[$num_file]}"
-						! rm "$dir_filecfg" && clear && echo -e "${RED}File not found! Check Again! ${NC}" || clear
+						! rm "$dir_filecfg" && clear && ERROR "File not found! Check Again!" || clear
 						process_config "run_config"
 				else
 clear
-					echo -e "${Red}Invalid choice. Please chose again!${NC}\n"
+					ERROR "Invalid choice. Please chose again!\n"
 					run_config
 				fi
 			fi
@@ -427,7 +404,7 @@ clear
 
 	   * ) # Error to run fucntion
 clear
-	   		echo -e "${Red}ERROR to process config${NC}"
+	   		ERROR "ERROR to process config"
 			exit 1
 	;;
 esac
@@ -549,6 +526,7 @@ clear
 				echo -ne "${Lightgray}Added: ${NC}";IFS=',';echo -e "${Cyan}${file_extension[*]// /,}${NC}";IFS=$' \t\n'
 			done
 			echo -e "${Lightgray}Name of the folder you want to create more in${NC} ${Cyan}'$drive_name:$root_folder'${NC}"
+			echo -e "${Lightgray}Can create multiple paths. EG:${NC} ${Cyan}dir1/dir2/dir3${NC}"
 			read -r folder
 			[[ -n "$folder" ]] && root_folder="$root_folder/$folder"
 			echo -e "${Lightgray}Copy all files including copied files (y/n)${NC}"
@@ -556,7 +534,7 @@ clear
 			if [[ $# -eq 0 ]] ;then
 				echo -ne "\n${BGreen}CHECKED:${NC}  "
 				for extension in "${file_extension[@]}" ;do
-					local total[$extension]="$(find "$PWD"/*."$extension" -maxdepth 1 -type f -printf x 2>/dev/null | wc -c)"
+					local total[$extension]="$(find "$PWD"/*."$extension" -maxdepth 0 -type f -printf x 2>/dev/null | wc -c)"
 					TotalFile=$(( TotalFile+${total[$extension]} ))
 					echo -ne "${Lightgray}${total[$extension]}${NC} ${Lightcyan]}$extension${NC} | "
 				done
@@ -580,7 +558,7 @@ clear
 						echo -ne "${BGreen}$arg:${NC}  "
 						local TotalFileSinge=0
 						for extension in "${file_extension[@]}" ;do
-							local total[$extension]="$(find "$(readlink -f "$arg")"/*."$extension" -maxdepth 1 -type f -printf x 2>/dev/null | wc -c)"
+							local total[$extension]="$(find "$(readlink -f "$arg")"/*."$extension" -maxdepth 0 -type f -printf x 2>/dev/null | wc -c)"
 							local TotalFileSinge=$(( TotalFileSinge+${total[$extension]} ))
 							echo -ne "${Lightgray}${total[$extension]}${NC} ${Lightcyan}$extension${NC} | "
 						done
@@ -639,7 +617,7 @@ clear
 		6 ) # Update Script
 			if testvercomp "$new_version" "$version" ">" 2>/dev/null;then
 				if ! curl -o "$(dirname "$(readlink -f "$0")")/$script_name" "https://raw.githubusercontent.com/LHViet245/Script-Auto-Manager/main/scripts/.cptodrive-new" 2>/dev/null ;then
-					echo -e "${Red}Upgrade failed. Upgrade download failed!${NC}"
+					ERROR "Upgrade failed. Upgrade download failed!"
 					exit 1
 				else
 					chmod +x "$(dirname "$(readlink -f "$0")")/$script_name"
@@ -660,8 +638,8 @@ clear
 		
 		* ) # Not Valid Choice
 clear
-			echo -e "\n${Red}Not a valid choice${NC}"
-			echo -e "${Red}Please choice some number${NC}\n"
+			ERROR "\nNot a valid choice"
+			ERROR "Please choice some number\n"
 			menuRclone "$@"
 		;;
 		
@@ -688,7 +666,7 @@ if [[ "$1" == "debug-on" ]] ;then
 	exit 0
 elif [[ "$1" == "debug-off" ]] ;then
 	sed -i '/^\(\s\|#\)*clear/ c\clear' "$0"
-	echo -e "${Red}DEBUG OFF"
+	echo -e "${Red}DEBUG OFF${NC}"
 	exit 0
 fi
 # Check config file
