@@ -294,11 +294,15 @@ echo "Installing atmanager"
 cd "$HOME"
 git clone -q https://github.com/LHViet245/Script-Auto-Manager.git "$source_script"
 cd "$source_script/Script-Auto-Manager" || { echo "cd to /etc/atsinstall Failure"; exit 1; }
-ln -sf /etc/atsinstall/scripts/.atsrun-new ~/.local/bin
-ln -sf /etc/atsinstall/scripts/.cptodrive-new ~/.local/bin
-ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
-chmod +x /usr/local/bin/.atsrun-new
-chmod +x /usr/local/bin/.cptodrive
+ln -sf "$source_script"/Script-Auto-Manager/scripts/* ~/.local/bin
+ln -sf "$source_script"/Script-Auto-Manager/feature/* ~/.local/bin
+ln -sf "$source_script"/Script-Auto-Manager/install-for-all-user ~/.local/bin
+ln -sf "$source_script"/Script-Auto-Manager/install-for-local-user ~/.local/bin
+chmod +x ~/.local/bin/.atsrun 
+chmod +x ~/.local/bin/.cptodrive
+chmod +x ~/.local/bin/install-for-all-user
+chmod +x ~/.local/bin/install-for-local-user
+chmod +x ~/.local/bin/get-function
 
 echo "Installation complete"
 echo
