@@ -12,11 +12,25 @@
 ##############################################
 ##################################################################################################################################
 
-PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/bin:/sbin
+if [[ -d "$HOME/.local/bin" ]] ;then
+  if [[ $(echo "$PATH" | grep -wc "$HOME/.local/bin") -eq 0 ]];then
+  	echo "export PATH="$HOME/.local/bin:$PATH"" >> ~/.bashrc
+  	source ~/.bashrc
+  fi
+else
+  if [[ $(echo "$PATH" | grep -wc "$HOME/.local/bin") -eq 0 ]];then
+  	mkdir -p $HOME/.local/bin
+  	echo "export PATH="$HOME/.local/bin:$PATH"" >> ~/.bashrc
+  	souce ~/.bashrc
+  fi
+fi
 rundir="$(dirname "$(readlink -f "$0")")"
+source_script="$HOME/.auto-manager-server"
+
+[[ ! -d "$source_script" ]] && mkdir -p "$source_script"
 
 # function to ask user for y/n response
-ask_user(){
+function ask_user(){
 local answer
 while true
   do
@@ -28,153 +42,165 @@ while true
   done
 }
 
+# Check installed package
+function not_installed() {
+  if [[ "$(dpkg-query -W -f='${Status}' $1 2>/dev/null | grep -wc "ok installed")" -eq 0 ]]; then
+	return 1
+  else
+	return 0
+  fi
+}
+
+function install() {
+	apt-get -yqq install $1 2>&1 >> /dev/null && echo "OK"
+}
+
+function pip_install() {
+	python3.9 -m pip install $* || echo "Install $* FAIL" && exit 1
+}
+
+function install_autosub()  {
+cd "$HOME"
+# Install langcode .Source: "https://github.com/rspeer/langcodes"
+if [ "$(python3.9 -m  pip list | grep -c langcodes)" -eq 0 ] ;then
+	echo "Installing langcodes"
+	git clone -q https://github.com/rspeer/langcodes.git
+	cd langcodes || { echo "cd to langcodes Failure"; exit 1; }
+	if ! python3.9 setup.py install;then
+		echo "Install langcodes fail"
+		exit 1
+	else
+		cd $HOME
+		rm -rf ~/langcodes
+	fi
+fi
+
+# Install ffmpeg-normalize .Source: "https://github.com/slhck/ffmpeg-normalize"
+if [ "$(python3.9 -m  pip list | grep -wc ffmpeg-normalize)" -eq 0 ] ;then
+	echo "Installing ffmpeg-normalize"
+	pip_install ffmpeg-normalize
+fi
+
+# Install python-Levenshtein .Source: "https://github.com/ztane/python-Levenshtein"
+if [ "$(python3.9 -m  pip list | grep -wc python-Levenshtein)" -eq 0 ] ;then
+	echo "Installing python-Levenshtein"
+	pip_install python-Levenshtein
+fi
+
+# Install fuzzywuzzy .Source: "https://github.com/seatgeek/fuzzywuzzy"
+if [ "$(python3.9 -m  pip list | grep -wc fuzzywuzzy)" -eq 0 ] ;then
+	echo "Installing fuzzywuzzy"
+	pip_install fuzzywuzzy
+fi
+
+# Install autosub .Source: "https://github.com/BingLingGroup/autosub"
+if [ "$(python3.9 -m  pip list | grep -wc autosub)" -eq 0 ] ;then
+	echo "Installing autosub"
+	git clone -q https://github.com/BingLingGroup/autosub.git
+	cd ~/autosub
+	if ! python3.9 setup.py install;then
+		pip_install idna==2.* httpcore==0.9.* chardet==3.* hstspreload
+		python3.9 setup.py install
+	else
+		cd "$HOME"
+		rm -rf ~/autosub
+	fi
+fi
+}
+
 # Check user Root
 if [ "$(id -u)" != "0" ]; then
   echo "Must be run as root, directly or with sudo"
   exit 1
 fi
 
-# kill apt-daily.service if running
-if [ "$(dpkg-query -W -f='${Status}' systemd 2>/dev/null | grep -c "ok installed")" -ne 0 ]; then
-	if [[ $(systemctl list-units --all apt-daily.service | fgrep -c apt-daily.service) -gt 0 ]]; then
-	systemctl stop apt-daily.service > /dev/null 2>&1
-	systemctl kill --kill-who=all apt-daily.service > /dev/null 2>&1
-	sleep 5
-	fi
-fi
-
 apt-get -qq update
 
-if [ "$(dpkg-query -W -f='${Status}' unzip 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing apt-utils"
-	apt-get -yqq install unzip 2>&1 >> /dev/null
+if not_installed "unzip"; then
+	echo -n "Installing unzip - "
+	install unzip
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' apt-utils 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing apt-utils"
-	apt-get -yqq install apt-utils 2>&1 >> /dev/null
+if not_installed "apt-utils"; then
+	echo -n "Installing apt-utils - "
+	install apt-utils
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' software-properties-common 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing software-properties-common"
-	apt-get -yqq install software-properties-common 2>&1 >> /dev/null
+if not_installed "software-properties-common"; then
+	echo -n "Installing software-properties-common - "
+	install Installing software-properties-common
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' git 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing git"
-	apt-get -yqq install git 2>&1 >> /dev/null
+if not_installed "git"; then
+	echo -n "Installing git - "
+	install git
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' python3.9 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
+if not_installed "python3.9"; then
 	echo "Installing python3.9"
-	add-apt-repository ppa:deadsnakes/ppa 2>&1 >> /dev/null
+	add-apt-repository ppa:deadsnakes/ppa
 	apt-get -qq update
 	apt-get -yqq install python3.9
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' python3.9-distutils 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing python3.9-distutils"
-	apt-get -yqq install python3.9-distutils 2>&1 >> /dev/null
+if not_installed "python3.9-distutils"; then
+	echo -n "Installing python3.9-distutils"
+	install python3.9-distutils
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing curl"
-	apt-get -yqq install curl 2>&1 >> /dev/null
+if not_installed curl; then
+	echo -n "Installing curl - "
+	install curl
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' python3.9-dev 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing curl python3.9-dev"
-	apt-get -yqq install python3.9-dev 2>&1 >> /dev/null
+if not_installed "python3.9-dev"; then
+	echo -n "Installing curl python3.9-dev - "
+	install python3.9-dev
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' gcc 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	echo "Installing gcc"
-	apt-get -yqq install gcc 2>&1 >> /dev/null
+if not_installed gcc; then
+	echo -n "Installing gcc"
+	install gcc
 fi
 
 if ! python3.9 -m pip --version 2>/dev/null;then
 	echo "Installing python3.9 pip, wheel, setuptools"
+	cd "$HOME"
 	curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 	python3.9 get-pip.py
 	python3.9 -m pip install --upgrade pip setuptools wheel
-	rm get-pip.py
+	rm -f ~/get-pip.py
 fi
 
-if [ "$(dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-	if [ "$(apt-cache show ffmpeg | grep -c "Version: 7:4.*")" -eq 0 ] ;then
+if not_installed "ffmpeg"; then
+	if [ "$(apt-cache show ffmpeg | sed -n 3p | awk -F: '{print $3}' | awk -F. '{print $1}')" -lt 4 ] ;then
 		echo "Installing ffmpeg Version 4.x"
 		add-apt-repository ppa:jonathonf/ffmpeg-4
 		apt-get -qq update
-		apt-get -yqq install ffmpeg
+		echo -n "Installing......."
+		install ffmpeg
 	else
-		echo "Installing ffmpeg Version 4.x"
-		apt-get -yqq install ffmpeg
+		echo "Installing ffmpeg Version 4.x - "
+		install ffmpeg
 	fi
 else
-	if [ "$(ffmpeg -version | grep -c "ffmpeg version 4.*")" -eq 0 ]; then
+	if [ "$(ffmpeg -version | head -n 1 | awk '{print $3}' | awk -F. '{print $1}')" -lt 4 ]; then
+		echo "Uninstall ffmpeg old version"
 		apt-get -yqq uninstall ffmpeg
-		if [ "$(apt-cache show ffmpeg | grep -c "Version: 7:4.*")" -eq 0 ] ;then
+		if [ "$(apt-cache show ffmpeg | sed -n 3p | awk -F: '{print $3}' | awk -F. '{print $1}')" -lt 4 ] ;then
 			echo "Installing ffmpeg Version 4.x"
 			add-apt-repository ppa:jonathonf/ffmpeg-4
 			apt-get -qq update
-			apt-get -yqq install ffmpeg
+			echo -n "Installing......."
+			install ffmpeg
 		else
-			echo "Installing ffmpeg Version 4.x"
-			apt-get -yqq install ffmpeg
+			echo "Installing ffmpeg Version 4.x - "
+			install ffmpeg
 		fi
 	fi
 fi
 
-# Install langcode .Source: "https://github.com/rspeer/langcodes"
-if [ "$(python3.9 -m  pip list | grep -c langcodes)" -eq 0 ] ;then
-	echo "Installing langcodes"
-	git clone -q https://github.com/rspeer/langcodes
-	cd langcodes || { echo "cd to langcodes Failure"; exit 1; }
-	if ! python3.9 setup.py install;then
-		echo "Install langcodes fail"
-		exit
-	else
-		cd ..
-		rm -rf langcodes
-	fi
-fi
 
-# Install ffmpeg-normalize .Source: "https://github.com/slhck/ffmpeg-normalize"
-if [ "$(python3.9 -m  pip list | grep -c ffmpeg-normalize)" -eq 0 ] ;then
-	echo "Installing ffmpeg-normalize"
-	! python3.9 -m pip install ffmpeg-normalize && echo "Install ffmpeg-normalize Fail" && exit
-fi
-
-# Install python-Levenshtein .Source: "https://github.com/ztane/python-Levenshtein"
-if [ "$(python3.9 -m  pip list | grep -c python-Levenshtein)" -eq 0 ] ;then
-	echo "Installing python-Levenshtein"
-	! python3.9 -m pip install python-Levenshtein && echo "Install python-Levenshtein Fail" && exit
-fi
-
-# Install fuzzywuzzy .Source: "https://github.com/seatgeek/fuzzywuzzy"
-if [ "$(python3.9 -m  pip list | grep -c fuzzywuzzy)" -eq 0 ] ;then
-	echo "Installing fuzzywuzzy"
-	! python3.9 -m pip install fuzzywuzzy && echo "Install fuzzywuzzy Fail" && exit
-fi
-
-# Install autosub .Source: "https://github.com/BingLingGroup/autosub"
-if [ "$(python3.9 -m  pip list | grep -c autosub)" -eq 0 ] ;then
-	if [ "$(python3.9 -m  pip show chardet | grep -c "Version: 3.*")" -eq 0 ] ;then
-		echo "Installing chardet==3.*"
-		python3.9 -m  pip install chardet==3.*
-	fi
-	echo "Installing autosub"
-	git clone -q https://github.com/BingLingGroup/autosub
-	cd autosub
-	[  ]
-	if ! python3.9 setup.py install;then
-		echo "Install autosub fail"
-		exit
-	else
-		cd ..
-		rm -rf autosub
-	fi
-fi
 
 # Install Rclone .Soucre: "https://github.com/rclone/rclone"
 if [ ! -f "/usr/bin/rclone" ] ;then
@@ -183,22 +209,39 @@ if [ ! -f "/usr/bin/rclone" ] ;then
 fi
 
 
-echo "Installing atsinstall"
-cd
-rm -fr /etc/atsinstall
-git clone -q https://github.com/LHViet245/Script-Easy-Autosub /etc/atsinstall
-cd /etc/atsinstall || { echo "cd to /etc/atsinstall Failure"; exit 1; }
-ln -sf /etc/atsinstall/scripts/.atsrun-new /usr/local/bin
-ln -sf /etc/atsinstall/scripts/.cptodrive /usr/local/bin
-ln -sf /etc/atsinstall/autosubsetup /usr/local/bin
-chmod +x /usr/local/bin/.atsrun-new
-chmod +x /usr/local/bin/.cptodrive
+echo -ne "Check autusub - "
+if which autosub 2>/dev/null ;then
+  echo "Installed Version $(autosub --version | awk '{print $2}')"
+elif [[ -f  "$HOME/.auto-manager-server/autosub-env/bin/activate" ]] ;then
+  source "$source_script/autosub-env/bin/activate"
+  which autosub 2>/dev/null && echo "Installed Version $(autosub --version | awk '{print $2}')"
+else
+  echo "Install autosub under Virtual Environments ? (y/n)"
+  echo "Virtual Environments will be installed in ~/.auto-manager-server/autosub-env"
+  if ask_user ;then
+	python3.9 -m venv "$source_script/autosub-env"
+	source "$source_script/autosub-env/bin/activate" || echo "Fail to create Virtual Environments" && exit 1
+  fi
+  echo "Installing autosub by Bing Ling <binglinggroup@outlook.com>"
+  install_autosub
+fi
 
+
+
+echo "Installing atsinstall"
+cd "$HOME"
+git clone -q https://github.com/LHViet245/Script-Auto-Manager.git "$source_script"
+cd "$source_script/Script-Auto-Manager" || { echo "cd to /etc/atsinstall Failure"; exit 1; }
+ln -sf "$source_script"/Script-Auto-Manager/scripts/* /usr/local/bin
+ln -sf "$source_script"/Script-Auto-Manager/feature/* /usr/local/bin
+ln -sf "$source_script"/Script-Auto-Manager/install-for-all-user /usr/local/bin
+ln -sf "$source_script"/Script-Auto-Manager/install-for-local-user /usr/local/bin
+cd "$HOME"
 echo "Installation complete"
 echo
 echo "Run rclone config tho config your dirve"
 echo "You can now run .atsrun-new and .cptodrive"
 
-if [ "$rundir" != "/etc/atsinstall" ]; then
-    rm -f "$rundir/autosubsetup"
+if [ "$rundir" != "$source_script/Script-Auto-Manager" ]; then
+    rm -rf "$rundir/autosubsetup"
 fi

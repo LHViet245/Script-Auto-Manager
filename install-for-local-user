@@ -50,9 +50,9 @@ function installed() {
 # Fuction pip install package
 function pip_install() {
 	if [[ $env == "yes" ]] ;then
-		python3.9 -m pip install $*
+		python3.9 -m pip install $* || echo "Install $* FAIL" && exit 1
 	else
-		python3.9 -m pip install --user $*
+		python3.9 -m pip install --user $* || echo "Install $* FAIL" && exit 1
 	fi
 }
 
@@ -298,17 +298,17 @@ ln -sf "$source_script"/Script-Auto-Manager/scripts/* ~/.local/bin
 ln -sf "$source_script"/Script-Auto-Manager/feature/* ~/.local/bin
 ln -sf "$source_script"/Script-Auto-Manager/install-for-all-user ~/.local/bin
 ln -sf "$source_script"/Script-Auto-Manager/install-for-local-user ~/.local/bin
-chmod +x ~/.local/bin/.atsrun 
-chmod +x ~/.local/bin/.cptodrive
-chmod +x ~/.local/bin/install-for-all-user
-chmod +x ~/.local/bin/install-for-local-user
-chmod +x ~/.local/bin/get-function
+# chmod +x ~/.local/bin/.atsrun 
+# chmod +x ~/.local/bin/.cptodrive
+# chmod +x ~/.local/bin/install-for-all-user
+# chmod +x ~/.local/bin/install-for-local-user
+# chmod +x ~/.local/bin/get-function
 
 echo "Installation complete"
 echo
 echo "Run rclone config tho config your dirve"
-echo "You can now run .atsrun-new and .cptodrive"
+echo "You can now run .atsrun and .cptodrive"
 
-if [ "$rundir" != "/etc/atsinstall" ]; then
+if [ "$rundir" != "$source_script/Script-Auto-Manager" ]; then
     rm -f "$rundir/autosubsetup"
 fi
