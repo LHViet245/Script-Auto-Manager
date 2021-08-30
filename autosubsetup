@@ -20,10 +20,10 @@ ask_user(){
 local answer
 while true
   do
-    read answer
-    case $answer in [Yy]* ) return 0 ;;
-                    [Nn]* ) return 1 ;;
-                        * ) echo "Enter y or n";;
+    read -r -n 1 answer
+    case $answer in [Yy]* ) echo "" && return 0 ;;
+                    [Nn]* ) echo "" && return 1 ;;
+                        * ) echo -e "\nEnter y or n";;
     esac
   done
 }
