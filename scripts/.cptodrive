@@ -660,16 +660,7 @@ if [[ -f "$(which get-function)" ]];then
 else
 	echo -e "\nGet color function error. Will run without color\n"
 fi
-# Debug clear mode
-if [[ "$1" == "debug-on" ]] ;then
-	sed -i '/^\(\s\|#\)*clear/ c\#clear' "$0"
-	echo -e "${BGreen}DEBUG ON${NC}"
-	exit 0
-elif [[ "$1" == "debug-off" ]] ;then
-	sed -i '/^\(\s\|#\)*clear/ c\clear' "$0"
-	echo -e "${Red}DEBUG OFF${NC}"
-	exit 0
-fi
+
 # Check config file
 while IFS= read -r filecfg_check ;do
 	if [[ "$(grep -w '^Default run' "$filecfg_check" | awk -F: '{print $NF}' | sed 's/ //g')" == "YES" ]] 2>/dev/null ;then
